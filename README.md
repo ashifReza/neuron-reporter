@@ -1,4 +1,6 @@
-# neuron-reporter
+<p align="center"><img src="docs/logo.svg" width="96" height="96" alt="neuron-reporter logo"></p>
+
+<h1 align="center">neuron-reporter</h1>
 
 A self-contained HTML test report for UI automation. You record your test as named **steps** grouped into **test cases**. neuron-reporter writes one HTML file containing screenshots, failure triage and run history trends.
 

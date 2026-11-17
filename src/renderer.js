@@ -13,6 +13,19 @@ const fs = require('fs');
 const path = require('path');
 const ReportHistory = require('./history');
 
+// Brand mark: a neuron whose axon becomes a check mark. Inline SVG so the
+// report stays a single file; also used (URL-encoded) as the favicon.
+const LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="neuron-reporter">'
+  + '<defs><linearGradient id="nr-logo-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a78d6"/><stop offset="1" stop-color="#7b4fe0"/></linearGradient></defs>'
+  + '<rect width="64" height="64" rx="16" fill="url(#nr-logo-g)"/>'
+  + '<g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">'
+  + '<path d="M22 26 L12 16 M22 26 L9 29 M22 26 L17 13.5" stroke-width="3" opacity="0.75"/>'
+  + '<path d="M22 26 L29 44 L52 17" stroke-width="5"/></g>'
+  + '<g fill="#fff"><circle cx="22" cy="26" r="6.5"/><circle cx="12" cy="16" r="2.6" opacity="0.85"/>'
+  + '<circle cx="9" cy="29" r="2.6" opacity="0.85"/><circle cx="17" cy="13.5" r="2.2" opacity="0.85"/><circle cx="52" cy="17" r="3.4"/></g>'
+  + '<circle cx="22" cy="26" r="2.4" fill="url(#nr-logo-g)"/></svg>';
+const FAVICON = `data:image/svg+xml,${encodeURIComponent(LOGO_SVG)}`;
+
 // Set per render() call: the classifier in use.
 let CLASSIFY = ReportHistory.defaultClassifier;
 
@@ -372,6 +385,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   return `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} — test report</title>
+<link rel="icon" type="image/svg+xml" href="${FAVICON}">
 <style>
   :root {
     color-scheme: light;
@@ -610,6 +624,9 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   h2 { font-size: 15px; font-weight: 650; text-transform: none; letter-spacing: -0.01em; color: var(--text-primary); margin: 0; }
 
   .hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 40px 0 28px; margin: 0; }
+  .brand { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-secondary); text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; flex: none; border-radius: 7px; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+  @media print { .brand svg { box-shadow: none; } }
   .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .hero h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; margin: 0 0 6px; }
   .hero-sub { font-size: 15px; color: var(--text-secondary); margin: 0 0 14px; }
@@ -691,6 +708,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
 <div class="wrap">
   <header class="hero">
     <div class="hero-text">
+      <div class="brand">${LOGO_SVG}<span>neuron-reporter</span></div>
       <div class="eyebrow">${esc([runInfo && (runInfo.Environment || runInfo.environment), title].filter(Boolean).join(' · '))}</div>
       <h1>${counts.COMPLETED} of ${total} test case${total === 1 ? '' : 's'} passed</h1>
       <p class="hero-sub">${counts.FAILED ? `${counts.FAILED} failed` : 'No failures'}${counts.WARNED ? ` · ${counts.WARNED} warned` : ''} · ${totalSteps} steps in ${fmtDuration(totalDuration)}</p>
@@ -870,4 +888,4 @@ function writeReport(outPath, opts) {
   return outPath;
 }
 
-module.exports = { render, writeReport, fmtDuration, esc };
+module.exports = { render, writeReport, fmtDuration, esc, LOGO_SVG };
