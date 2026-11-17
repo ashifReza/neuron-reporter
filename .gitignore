@@ -1,0 +1,6 @@
+node_modules/
+reports/
+examples/history/
+*.log
+.DS_Store
+PUBLISH_TO_GITHUB.md

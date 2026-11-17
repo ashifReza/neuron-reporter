@@ -1,0 +1,49 @@
+{
+  "name": "neuron-reporter",
+  "version": "1.0.0",
+  "description": "A self-contained HTML test report for UI automation: steps and test cases, screenshots, run history trends and failure triage. Zero dependencies. Works with WebdriverIO, Appium, Playwright, Maestro or any runner.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashifReza/neuron-reporter.git"
+  },
+  "homepage": "https://github.com/ashifReza/neuron-reporter#readme",
+  "bugs": {
+    "url": "https://github.com/ashifReza/neuron-reporter/issues"
+  },
+  "main": "src/index.js",
+  "bin": {
+    "neuron-reporter": "bin/neuron-reporter.js"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./adapters/webdriverio": "./src/adapters/webdriverio.js",
+    "./adapters/playwright": "./src/adapters/playwright.js",
+    "./adapters/maestro": "./src/adapters/maestro.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "example": "node examples/generate-sample.js"
+  },
+  "keywords": [
+    "test-report",
+    "html-report",
+    "reporter",
+    "webdriverio",
+    "appium",
+    "playwright",
+    "maestro",
+    "qa",
+    "test-automation"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
