@@ -10,11 +10,33 @@ A self-contained HTML test report for UI automation. You record your test as nam
 - **Run history.** Each run is appended to a small JSON file. The Trends tab draws pass rate and execution time over time and ranks the causes that keep coming back.
 - **Light and dark themes**, readable at phone width, and printable.
 
+## Screenshots
+
+Every report has four tabs. These come from the bundled example (`npm run example`).
+
+### Overview
+
+Pass rate, step pass rate, execution time and failure triage at a glance, with the failures of this run, the run details and the slowest steps.
+
 ![Overview tab](docs/overview.png)
 
-| Test cases | Trends |
-|---|---|
-| ![Test cases tab](docs/test-cases.png) | ![Trends tab](docs/trends.png) |
+### Test cases
+
+Every test case with its steps, timings, assertions and errors. Filter by status, search, and expand or collapse cases.
+
+![Test cases tab](docs/test-cases.png)
+
+### Screenshots
+
+The checkpoint screenshots of the run in order, with the failure screenshot highlighted.
+
+![Screenshots tab](docs/screenshots.png)
+
+### Trends
+
+Pass rate and execution time over recent runs, the causes that keep coming back, and the steps that fail most often.
+
+![Trends tab](docs/trends.png)
 
 Try it without any app or device:
 
