@@ -37,9 +37,11 @@ const DEFAULT_RULES = [
   { key: 'auth', type: 'environment', label: 'Authentication failed', hint: 'Bad credentials, an expired token, or a logged-out session.', test: /\b401\b|unauthori[sz]ed|login failed|invalid (token|credentials)/i },
   { key: 'server', type: 'environment', label: 'Server error (5xx)', hint: 'The backend answered with an error — retry, then check the service.', test: /\b5\d\d\b(?!\d)|internal server error|bad gateway|service unavailable/i },
   { key: 'network', type: 'environment', label: 'Network drop / timeout', hint: 'The request got no answer. Check the connection.', test: /fetch failed|\(network\)|ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|socket hang up|aborted due to timeout|net::ERR_/i },
-  { key: 'element', type: 'script', label: 'Element not found', hint: 'A screen changed, or a sheet/tooltip/dialog covered it.', test: /still not displayed|not displayed after|wasn't found|was not found|not existing|no such element|stale element|element not found|unable to find/i },
+  { key: 'element', type: 'script', label: 'Element not found', hint: 'A screen changed, or a sheet/tooltip/dialog covered it.', test: /still not displayed|not displayed after|wasn't found|was not found|not existing|no such element|stale element|element not found|element\(s\) not found|unable to find/i },
   { key: 'ui-wait', type: 'script', label: 'Expected state never appeared', hint: 'A status or text never appeared within the wait.', test: /never (showed|reached|appeared)|timed? ?out waiting|within \d+ ?m?s/i },
-  { key: 'mismatch', type: 'defect', label: 'Value mismatch', hint: 'The app showed a different value than expected — a real bug or a format change.', test: /expected .* (but|to (be|equal|include|contain))|does(n't| not) (match|include|equal)|mismatch|assertion ?error/i },
+  // "Expected … but …" prose, and the Expected:/Received: blocks of Playwright, Jest and Vitest.
+  { key: 'mismatch', type: 'defect', label: 'Value mismatch', hint: 'The app showed a different value than expected — a real bug or a format change.', test: /expected .* (but|to (be|equal|include|contain))|\bexpected\b[^\n]*:[\s\S]*\breceived\b[^\n]*:|does(n't| not) (match|include|equal)|mismatch|assertion ?error/i },
+  { key: 'test-timeout', type: 'script', label: 'Test timed out', hint: 'The whole test ran past its time limit — a slow app, a hang, or a wait that never ends.', test: /test timeout of \d+ ?ms exceeded|timeout of \d+ ?ms exceeded|exceeded timeout of \d+/i },
 ];
 const OTHER = { key: 'other', type: 'script', label: 'Other', hint: '' };
 
@@ -79,18 +81,23 @@ function makeKeyer() {
   };
 }
 
-/** Pre-order walk handing each node its key, test case and path. */
+/**
+ * Pre-order walk handing each node its key, test case and path. Steps under a
+ * node with an id are keyed below that id ("id:checkout › Pay"), so renaming
+ * the test case keeps its steps' history too.
+ */
 function walkKeyed(tree, visit) {
   const keyer = makeKeyer();
-  const walk = (nodes, parents) => {
+  const walk = (nodes, keyParents, testCase) => {
     for (const node of nodes || []) {
-      const parts = [...parents, String(node.description)];
-      const info = { key: keyer(node, parts), testCase: parts[0], step: String(node.description), depth: parents.length };
-      const descend = visit(node, info);
-      if (node.isGroup && descend !== false) walk(node.children, parts);
+      const parts = [...keyParents, String(node.description)];
+      const key = keyer(node, parts);
+      const tc = testCase || String(node.description);
+      const descend = visit(node, { key, testCase: tc, step: String(node.description), depth: keyParents.length });
+      if (node.isGroup && descend !== false) walk(node.children, node.id ? [key] : parts, tc);
     }
   };
-  walk(tree, []);
+  walk(tree, [], null);
 }
 
 const squash = (s) => String(s || '').replace(/\s+/g, ' ').slice(0, 300);

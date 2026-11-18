@@ -22,6 +22,20 @@
   - Steps that passed on a retry show amber in the strip.
 - GitHub Action input `extra-args`.
 
+### Fixed (found by testing against real Playwright 1.65, TypeScript 5.9 and the Action script)
+- **ESM imports:** `import { render, mergeRuns, createRedactor, … } from 'neuron-reporter'` failed at runtime. Node couldn't see those names as exports. `render` was already affected in 1.0.
+- **Playwright reporter:**
+  - Browser, context and page setup inside fixtures and hooks no longer shows up as steps of every test. A failing hook still shows.
+  - `test.fail()` tests no longer put their intended failures into the failure list, triage or history.
+  - The console summary no longer counts skipped tests as passed.
+  - An `{ type: 'id' }` annotation keeps a test's history across renames. Playwright's own test id changes when the title does.
+- **Failure triage:** the `Expected: … / Received: …` format of Playwright, Jest and Vitest is now classified as a value mismatch, `element(s) not found` as element not found, and "Test timeout of N ms exceeded" under a new **Test timed out** cause.
+- **History keys:** steps inside a test case with an `id` are keyed under that id, so they keep their history when the case is renamed.
+- **Input checks:** `render` and `merge` refuse a history file or unrelated JSON with a clear error, instead of rendering a meaningless report.
+- **Merged reports** no longer show one shard's own "Shard N of M" row.
+- **Tests:** `npm test` no longer relies on the shell to expand `test/*.test.js`, which Windows `cmd.exe` doesn't do.
+- **Trends:** the "did not run" square is now clearly visible in dark mode.
+
 ### Changed
 - `render()` redacts by default. Pass `redact: false` for the old behaviour.
 - `render` in the CLI now reads input through the same path as `merge`. The output is unchanged.

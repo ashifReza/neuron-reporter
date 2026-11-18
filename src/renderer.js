@@ -847,7 +847,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree: rawTr
   .strip i.p { background: var(--good); opacity: 0.7; }
   .strip i.f { background: var(--critical); }
   .strip i.r { background: var(--warning); }
-  .strip i.n { background: transparent; box-shadow: inset 0 0 0 1px var(--text-muted); opacity: 0.6; }
+  .strip i.n { background: repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--text-muted) 55%, transparent) 2px 3px); box-shadow: inset 0 0 0 1px var(--text-secondary); }
   /* ---- attachments ---- */
   .node-attachments { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
   .group-attachments { padding: 0 16px 10px 40px; }

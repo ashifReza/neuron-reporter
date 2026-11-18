@@ -47,12 +47,26 @@ function errorText(err) {
   return msg || clean(err.stack || '');
 }
 
+// Setup and teardown: hidden, along with the browser/context/page calls inside
+// them, unless something in them failed (a failing beforeEach must be visible).
+const SETUP_CATEGORIES = new Set(['hook', 'fixture']);
+
+function hasError(step) {
+  return !!step.error || (step.steps || []).some(hasError);
+}
+
 function convertSteps(steps, categories) {
   const out = [];
   for (const step of steps || []) {
+    if (SETUP_CATEGORIES.has(step.category)) {
+      if (!hasError(step)) continue;
+      const err = step.error || (function first(s) { for (const c of s.steps || []) { if (c.error) return c.error; const e = first(c); if (e) return e; } return null; })(step);
+      out.push({ description: clean(step.title), status: 'FAILED', duration: Math.max(0, Math.round(step.duration || 0)), isGroup: false, children: [], error: errorText(err) });
+      continue;
+    }
     const children = convertSteps(step.steps, categories);
     if (!categories.includes(step.category)) {
-      out.push(...children); // hide hooks/fixtures but keep what they contain
+      out.push(...children); // a step kind not shown: keep what it contains
       continue;
     }
     const failed = !!step.error || children.some((c) => c.status === 'FAILED');
@@ -137,10 +151,23 @@ class NeuronPlaywrightReporter {
       const last = results[results.length - 1];
       const outcome = typeof test.outcome === 'function' ? test.outcome() : null;
       let status = STATUS[last.status] || 'FAILED';
-      // Honour test.fail(): an expected failure is a pass.
-      if (outcome === 'expected' && status === 'FAILED') status = 'COMPLETED';
+      // Honour test.fail(): an expected failure is a pass, and the steps that
+      // failed inside it failed as intended — shown as warned, not as failures.
+      const expectedFailure = outcome === 'expected' && status === 'FAILED';
+      if (expectedFailure) status = 'COMPLETED';
       if (outcome === 'skipped') status = 'SKIPPED';
       const children = convertSteps(last.steps, this.options.stepCategories);
+      if (expectedFailure) {
+        const soften = (nodes) => nodes.forEach((n) => {
+          if (n.status === 'FAILED') {
+            n.status = 'WARNED';
+            n.detail = [`Failed as expected (test.fail())${n.error ? `: ${n.error}` : ''}`, n.detail].filter(Boolean).join('\n');
+            delete n.error;
+          }
+          soften(n.children || []);
+        });
+        soften(children);
+      }
       const node = {
         description: this._title(test, multiProject),
         status,
@@ -148,8 +175,13 @@ class NeuronPlaywrightReporter {
         isGroup: children.length > 0,
         children,
       };
-      // Playwright's test id is a hash of file, project and title: a stable identity for history.
-      if (test.id) node.id = String(test.id);
+      if (expectedFailure) node.detail = 'Marked test.fail(): it failed, as expected.';
+      // Identity for run history: an { type: 'id' } annotation if the test has one
+      // (survives renames), else Playwright's test id (a hash of file, project and
+      // title — stable between runs, but new when the test is renamed).
+      const idNote = (test.annotations || []).find((a) => a && a.type === 'id' && a.description);
+      if (idNote) node.id = String(idNote.description);
+      else if (test.id) node.id = String(test.id);
       if (status === 'FAILED') node.error = errorText(last.error || (last.errors || [])[0]);
       if (results.length > 1) {
         node.attempts = results.map((r) => ({ status: STATUS[r.status] || 'FAILED', duration: Math.round(r.duration || 0), ...(r.error ? { error: errorText(r.error) } : {}) }));
@@ -162,7 +194,7 @@ class NeuronPlaywrightReporter {
       });
       if (atts.length) node.attachments = atts;
       const loc = test.location ? `${path.relative(process.cwd(), test.location.file)}:${test.location.line}` : '';
-      if (loc) node.detail = loc;
+      if (loc) node.detail = [node.detail, loc].filter(Boolean).join('\n');
       tree.push(node);
     }
     return tree;
@@ -217,8 +249,9 @@ class NeuronPlaywrightReporter {
       runInfo: { ...info, Started: readable(startTime, true) },
     });
     const flaky = history.collectFlaky(tree).length;
-    const failed = tree.filter((n) => n.status === 'FAILED').length;
-    console.log(`neuron-reporter: ${tree.length - failed}/${tree.length} passed${flaky ? `, ${flaky} flaky` : ''} → ${path.relative(process.cwd(), out)}`);
+    const count = (s) => tree.filter((n) => n.status === s).length;
+    const skipped = count('SKIPPED');
+    console.log(`neuron-reporter: ${count('COMPLETED')}/${tree.length} passed, ${count('FAILED')} failed${skipped ? `, ${skipped} skipped` : ''}${flaky ? `, ${flaky} flaky` : ''} → ${path.relative(process.cwd(), out)}`);
     if (shard && jsonFile) {
       console.log(`neuron-reporter: shard ${shard.current}/${shard.total} saved to ${path.relative(process.cwd(), jsonFile)} — collect every shard's file, then: npx neuron-reporter merge <folder> -o ${path.relative(process.cwd(), out)}`);
     }

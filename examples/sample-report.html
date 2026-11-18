@@ -332,7 +332,7 @@
   .strip i.p { background: var(--good); opacity: 0.7; }
   .strip i.f { background: var(--critical); }
   .strip i.r { background: var(--warning); }
-  .strip i.n { background: transparent; box-shadow: inset 0 0 0 1px var(--text-muted); opacity: 0.6; }
+  .strip i.n { background: repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--text-muted) 55%, transparent) 2px 3px); box-shadow: inset 0 0 0 1px var(--text-secondary); }
   /* ---- attachments ---- */
   .node-attachments { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
   .group-attachments { padding: 0 16px 10px 40px; }
@@ -359,7 +359,7 @@
       <h1>7 of 8 test cases passed</h1>
       <p class="hero-sub">1 failed · 1 flaky · 20 steps in 5s</p>
       <div class="hero-meta">
-        <span>Run on Wed, 18 Nov 2026 at 11:17 PM</span>
+        <span>Run on Wed, 18 Nov 2026 at 11:50 PM</span>
         <span>Pixel 8 · Android 15</span><span>App 3.4.1</span>
         <span class="pill">environment: staging</span><span class="pill">suite: smoke</span>
       </div>
@@ -408,7 +408,7 @@
       <div class="kpi">
         <div class="kpi-label">Execution time</div>
         <div class="kpi-value">5s</div>
-        <div class="kpi-foot"><span>avg 244ms per step</span></div>
+        <div class="kpi-foot"><span>avg 243ms per step</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-label">Failure triage</div>
@@ -437,7 +437,7 @@
       </div>
       <div class="card">
         <div class="card-head"><h2>Run details</h2></div>
-        <dl class="details"><dt>Suite</dt><dd title="demo-store-checkout">demo-store-checkout</dd><dt>Environment</dt><dd title="Staging">Staging</dd><dt>Device</dt><dd title="Pixel 8">Pixel 8</dd><dt>Android</dt><dd title="15">15</dd><dt>App</dt><dd title="com.example.store">com.example.store</dd><dt>App version</dt><dd title="3.4.1">3.4.1</dd><dt>Build</dt><dd title="feat/close-gaps-v1.1 @ fed4271 + local changes">feat/close-gaps-v1.1 @ fed4271 + local changes</dd><dt>Started</dt><dd title="18 Nov 2026, 11:17:36 PM">18 Nov 2026, 11:17:36 PM</dd><dt>Finished</dt><dd title="18 Nov 2026, 11:17:41 PM">18 Nov 2026, 11:17:41 PM</dd><dt>Execution time</dt><dd title="5s">5s</dd></dl>
+        <dl class="details"><dt>Suite</dt><dd title="demo-store-checkout">demo-store-checkout</dd><dt>Environment</dt><dd title="Staging">Staging</dd><dt>Device</dt><dd title="Pixel 8">Pixel 8</dd><dt>Android</dt><dd title="15">15</dd><dt>App</dt><dd title="com.example.store">com.example.store</dd><dt>App version</dt><dd title="3.4.1">3.4.1</dd><dt>Build</dt><dd title="feat/close-gaps-v1.1 @ 77b8314 + local changes">feat/close-gaps-v1.1 @ 77b8314 + local changes</dd><dt>Started</dt><dd title="18 Nov 2026, 11:50:28 PM">18 Nov 2026, 11:50:28 PM</dd><dt>Finished</dt><dd title="18 Nov 2026, 11:50:33 PM">18 Nov 2026, 11:50:33 PM</dd><dt>Execution time</dt><dd title="5s">5s</dd></dl>
       </div>
     </div>
 
@@ -463,45 +463,45 @@
       
     <div class="chart">
       
-        <div class="chart-row tip" data-tip="Payment page loads — 961ms (passed, in Checkout)">
+        <div class="chart-row tip" data-tip="Payment page loads — 948ms (passed, in Checkout)">
           <div class="label" title="Payment page loads">Payment page loads</div>
           <div class="track"><div class="bar" style="width:100%; background:var(--accent)"></div></div>
-          <div class="dur">961ms</div>
+          <div class="dur">948ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Tap Sign in — 531ms (passed, in Sign in)">
+        <div class="chart-row tip" data-tip="Tap Sign in — 521ms (passed, in Sign in)">
           <div class="label" title="Tap Sign in">Tap Sign in</div>
-          <div class="track"><div class="bar" style="width:55.254942767950055%; background:var(--accent)"></div></div>
-          <div class="dur">531ms</div>
+          <div class="track"><div class="bar" style="width:54.957805907173%; background:var(--accent)"></div></div>
+          <div class="dur">521ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Open Demo Store — 426ms (passed, in Launch the app)">
+        <div class="chart-row tip" data-tip="Open Demo Store — 434ms (passed, in Launch the app)">
           <div class="label" title="Open Demo Store">Open Demo Store</div>
-          <div class="track"><div class="bar" style="width:44.32882414151925%; background:var(--accent)"></div></div>
-          <div class="dur">426ms</div>
+          <div class="track"><div class="bar" style="width:45.78059071729958%; background:var(--accent)"></div></div>
+          <div class="dur">434ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Tap Place order — 411ms (passed, in Place the order)">
+        <div class="chart-row tip" data-tip="Tap Place order — 423ms (passed, in Place the order)">
           <div class="label" title="Tap Place order">Tap Place order</div>
-          <div class="track"><div class="bar" style="width:42.767950052029136%; background:var(--accent)"></div></div>
-          <div class="dur">411ms</div>
+          <div class="track"><div class="bar" style="width:44.620253164556964%; background:var(--accent)"></div></div>
+          <div class="dur">423ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Open checkout — 364ms (passed, in Checkout)">
+        <div class="chart-row tip" data-tip="Open checkout — 367ms (passed, in Checkout)">
           <div class="label" title="Open checkout">Open checkout</div>
-          <div class="track"><div class="bar" style="width:37.87721123829345%; background:var(--accent)"></div></div>
-          <div class="dur">364ms</div>
+          <div class="track"><div class="bar" style="width:38.71308016877637%; background:var(--accent)"></div></div>
+          <div class="dur">367ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Results list is shown — 313ms (passed, in Search for a product)">
+        <div class="chart-row tip" data-tip="Results list is shown — 320ms (passed, in Search for a product)">
           <div class="label" title="Results list is shown">Results list is shown</div>
-          <div class="track"><div class="bar" style="width:32.57023933402706%; background:var(--accent)"></div></div>
-          <div class="dur">313ms</div>
+          <div class="track"><div class="bar" style="width:33.755274261603375%; background:var(--accent)"></div></div>
+          <div class="dur">320ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Open &quot;Wireless Headphones&quot; — 282ms (passed, in Add to cart)">
+        <div class="chart-row tip" data-tip="Open &quot;Wireless Headphones&quot; — 283ms (passed, in Add to cart)">
           <div class="label" title="Open &quot;Wireless Headphones&quot;">Open &quot;Wireless Headphones&quot;</div>
-          <div class="track"><div class="bar" style="width:29.34443288241415%; background:var(--accent)"></div></div>
-          <div class="dur">282ms</div>
+          <div class="track"><div class="bar" style="width:29.85232067510549%; background:var(--accent)"></div></div>
+          <div class="dur">283ms</div>
         </div>
-        <div class="chart-row tip" data-tip="Type &quot;headphones&quot; — 237ms (passed, in Search for a product)">
+        <div class="chart-row tip" data-tip="Type &quot;headphones&quot; — 230ms (passed, in Search for a product)">
           <div class="label" title="Type &quot;headphones&quot;">Type &quot;headphones&quot;</div>
-          <div class="track"><div class="bar" style="width:24.661810613943807%; background:var(--accent)"></div></div>
-          <div class="dur">237ms</div>
+          <div class="track"><div class="bar" style="width:24.261603375527425%; background:var(--accent)"></div></div>
+          <div class="dur">230ms</div>
         </div>
     </div>
     </div>
@@ -529,8 +529,8 @@
         <span class="node-desc">Launch the app</span>
         
         <span class="step-count">2 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:34.82905982905983%"></i></span>
-        <span class="node-dur">489ms</span>
+        <span class="mini" aria-hidden="true"><i style="width:35.57623478883322%"></i></span>
+        <span class="node-dur">497ms</span>
         <span class="node-evidence"></span>
       </summary>
       
@@ -540,7 +540,7 @@
         <span class="node-desc" title="Open Demo Store">Open Demo Store</span>
         
         
-        <span class="node-dur">426ms</span>
+        <span class="node-dur">434ms</span>
         <span class="node-evidence"></span>
         
         
@@ -567,8 +567,8 @@
         <span class="node-desc">Sign in</span>
         
         <span class="step-count">4 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:65.38461538461539%"></i></span>
-        <span class="node-dur">918ms</span>
+        <span class="mini" aria-hidden="true"><i style="width:64.63851109520401%"></i></span>
+        <span class="node-dur">903ms</span>
         <span class="node-evidence"></span>
       </summary>
       
@@ -578,7 +578,7 @@
         <span class="node-desc" title="Enter email">Enter email</span>
         
         
-        <span class="node-dur">188ms</span>
+        <span class="node-dur">183ms</span>
         <span class="node-evidence"></span>
         
         
@@ -590,7 +590,7 @@
         <span class="node-desc" title="Enter password">Enter password</span>
         
         
-        <span class="node-dur">150ms</span>
+        <span class="node-dur">151ms</span>
         <span class="node-evidence"></span>
         
         
@@ -602,7 +602,7 @@
         <span class="node-desc" title="Tap Sign in">Tap Sign in</span>
         
         
-        <span class="node-dur">531ms</span>
+        <span class="node-dur">521ms</span>
         <span class="node-evidence"></span>
         
         
@@ -630,7 +630,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc">Search for a product</span>
         
         <span class="step-count">2 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:39.173789173789174%"></i></span>
+        <span class="mini" aria-hidden="true"><i style="width:39.37007874015748%"></i></span>
         <span class="node-dur">550ms</span>
         <span class="node-evidence"></span>
       </summary>
@@ -641,7 +641,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc" title="Type &quot;headphones&quot;">Type &quot;headphones&quot;</span>
         
         
-        <span class="node-dur">237ms</span>
+        <span class="node-dur">230ms</span>
         <span class="node-evidence"></span>
         
         
@@ -653,7 +653,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc" title="Results list is shown">Results list is shown</span>
         
         
-        <span class="node-dur">313ms</span>
+        <span class="node-dur">320ms</span>
         <span class="node-evidence"><a class="thumb-link" onclick="openLightbox(this.dataset.src)" data-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iNzYwIiB2aWV3Qm94PSIwIDAgMzYwIDc2MCI+CiAgICA8cmVjdCB3aWR0aD0iMzYwIiBoZWlnaHQ9Ijc2MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3Qgd2lkdGg9IjM2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyYTc4ZDYiLz4KICAgIDx0ZXh0IHg9IjI0IiB5PSI2NiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmYiPlNlYXJjaDwvdGV4dD4KICAgIDxnIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj48cmVjdCB4PSIyNCIgeT0iMTUwIiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmMWYzZjUiLz48dGV4dCB4PSI0MCIgeT0iMTgwIiBmb250LXNpemU9IjE2IiBmaWxsPSIjMzMzIj5XaXJlbGVzcyBIZWFkcGhvbmVzICQyNC4wMDwvdGV4dD48cmVjdCB4PSIyNCIgeT0iMjE0IiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmMWYzZjUiLz48dGV4dCB4PSI0MCIgeT0iMjQ0IiBmb250LXNpemU9IjE2IiBmaWxsPSIjMzMzIj5TdHVkaW8gSGVhZHBob25lcyAkNTkuMDA8L3RleHQ+PHJlY3QgeD0iMjQiIHk9IjI3OCIgd2lkdGg9IjMxMiIgaGVpZ2h0PSI0OCIgcng9IjEwIiBmaWxsPSIjZjFmM2Y1Ii8+PHRleHQgeD0iNDAiIHk9IjMwOCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzMzMyI+S2lkcyBIZWFkcGhvbmVzICQxNC4wMDwvdGV4dD48L2c+CiAgICA8cmVjdCB4PSIyNCIgeT0iNjYwIiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjU2IiByeD0iMjgiIGZpbGw9IiMyYTc4ZDYiLz4KICA8L3N2Zz4=">View</a></span>
         
         
@@ -668,8 +668,8 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc">Add to cart</span>
         
         <span class="step-count">4 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:41.38176638176638%"></i></span>
-        <span class="node-dur">581ms</span>
+        <span class="mini" aria-hidden="true"><i style="width:41.517537580529705%"></i></span>
+        <span class="node-dur">580ms</span>
         <span class="node-evidence"></span>
       </summary>
       
@@ -679,7 +679,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc" title="Open &quot;Wireless Headphones&quot;">Open &quot;Wireless Headphones&quot;</span>
         
         
-        <span class="node-dur">282ms</span>
+        <span class="node-dur">283ms</span>
         <span class="node-evidence"></span>
         
         
@@ -691,7 +691,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc" title="Tap Add to cart">Tap Add to cart</span>
         
         
-        <span class="node-dur">204ms</span>
+        <span class="node-dur">194ms</span>
         <span class="node-evidence"></span>
         
         
@@ -703,7 +703,7 @@ Actual: &quot;Hi, Alex&quot;</div>
         <span class="node-desc" title="Cart badge shows 1">Cart badge shows 1</span>
         
         
-        <span class="node-dur">32ms</span>
+        <span class="node-dur">39ms</span>
         <span class="node-evidence"></span>
         
         
@@ -716,7 +716,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Cart total matches the price">Cart total matches the price</span>
         
         
-        <span class="node-dur">63ms</span>
+        <span class="node-dur">64ms</span>
         <span class="node-evidence"><a class="thumb-link" onclick="openLightbox(this.dataset.src)" data-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iNzYwIiB2aWV3Qm94PSIwIDAgMzYwIDc2MCI+CiAgICA8cmVjdCB3aWR0aD0iMzYwIiBoZWlnaHQ9Ijc2MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3Qgd2lkdGg9IjM2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNkMDNiM2IiLz4KICAgIDx0ZXh0IHg9IjI0IiB5PSI2NiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmYiPkNhcnQgKDEpPC90ZXh0PgogICAgPGcgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPjxyZWN0IHg9IjI0IiB5PSIxNTAiIHdpZHRoPSIzMTIiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iI2YxZjNmNSIvPjx0ZXh0IHg9IjQwIiB5PSIxODAiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiMzMzMiPldpcmVsZXNzIEhlYWRwaG9uZXM8L3RleHQ+PHJlY3QgeD0iMjQiIHk9IjIxNCIgd2lkdGg9IjMxMiIgaGVpZ2h0PSI0OCIgcng9IjEwIiBmaWxsPSIjZjFmM2Y1Ii8+PHRleHQgeD0iNDAiIHk9IjI0NCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzMzMyI+U3VidG90YWwgICQyNDwvdGV4dD48L2c+CiAgICA8cmVjdCB4PSIyNCIgeT0iNjYwIiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjU2IiByeD0iMjgiIGZpbGw9IiNkMDNiM2IiLz4KICA8L3N2Zz4=">View</a></span>
         
         <div class="node-error">Expected &quot;$24.00&quot; but screen shows &quot;$24&quot;</div>
@@ -742,7 +742,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Open checkout">Open checkout</span>
         
         
-        <span class="node-dur">364ms</span>
+        <span class="node-dur">367ms</span>
         <span class="node-evidence"></span>
         
         
@@ -754,7 +754,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Shipping address is pre-filled">Shipping address is pre-filled</span>
         
         
-        <span class="node-dur">79ms</span>
+        <span class="node-dur">82ms</span>
         <span class="node-evidence"></span>
         
         
@@ -766,9 +766,9 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Payment page loads">Payment page loads</span>
         <span class="flaky-chip" title="Failed at least once, then passed on a retry">flaky</span>
         
-        <span class="node-dur">961ms</span>
+        <span class="node-dur">948ms</span>
         <span class="node-evidence"><a class="thumb-link" onclick="openLightbox(this.dataset.src)" data-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iNzYwIiB2aWV3Qm94PSIwIDAgMzYwIDc2MCI+CiAgICA8cmVjdCB3aWR0aD0iMzYwIiBoZWlnaHQ9Ijc2MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3Qgd2lkdGg9IjM2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyYTc4ZDYiLz4KICAgIDx0ZXh0IHg9IjI0IiB5PSI2NiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmYiPkNoZWNrb3V0PC90ZXh0PgogICAgPGcgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPjxyZWN0IHg9IjI0IiB5PSIxNTAiIHdpZHRoPSIzMTIiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iI2YxZjNmNSIvPjx0ZXh0IHg9IjQwIiB5PSIxODAiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiMzMzMiPlNoaXAgdG86IDIyMUIgRXhhbXBsZSBTdDwvdGV4dD48cmVjdCB4PSIyNCIgeT0iMjE0IiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmMWYzZjUiLz48dGV4dCB4PSI0MCIgeT0iMjQ0IiBmb250LXNpemU9IjE2IiBmaWxsPSIjMzMzIj5DYXJkIOKAouKAouKAouKAoiA0MjQyPC90ZXh0PjxyZWN0IHg9IjI0IiB5PSIyNzgiIHdpZHRoPSIzMTIiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iI2YxZjNmNSIvPjx0ZXh0IHg9IjQwIiB5PSIzMDgiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiMzMzMiPlRvdGFsICAkMjQuMDA8L3RleHQ+PC9nPgogICAgPHJlY3QgeD0iMjQiIHk9IjY2MCIgd2lkdGg9IjMxMiIgaGVpZ2h0PSI1NiIgcng9IjI4IiBmaWxsPSIjMmE3OGQ2Ii8+CiAgPC9zdmc+">View</a></span>
-        <div class="node-attempts"><span class="attempt-label">2 attempts</span><span class="attempt bad" title="GET /api/payments → 503 Service Unavailable">#1 ✕ 309ms</span><span class="attempt ok" title="">#2 ✓ 652ms</span><span class="attempt-msg">first failure: GET /api/payments → 503 Service Unavailable</span></div>
+        <div class="node-attempts"><span class="attempt-label">2 attempts</span><span class="attempt bad" title="GET /api/payments → 503 Service Unavailable">#1 ✕ 303ms</span><span class="attempt ok" title="">#2 ✓ 645ms</span><span class="attempt-msg">first failure: GET /api/payments → 503 Service Unavailable</span></div>
         
         
         <div class="node-attachments"><details class="att"><summary><span class="att-icon">≡</span>network.log<span class="att-type">text/x-log</span></summary><pre>12:04:10.112  GET /api/payments            503  301ms
@@ -790,8 +790,8 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc">Place the order</span>
         
         <span class="step-count">2 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:32.62108262108262%"></i></span>
-        <span class="node-dur">458ms</span>
+        <span class="mini" aria-hidden="true"><i style="width:33.71510379384395%"></i></span>
+        <span class="node-dur">471ms</span>
         <span class="node-evidence"></span>
       </summary>
       
@@ -801,7 +801,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Tap Place order">Tap Place order</span>
         
         
-        <span class="node-dur">411ms</span>
+        <span class="node-dur">423ms</span>
         <span class="node-evidence"></span>
         
         
@@ -813,7 +813,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Confirmation shows an order number">Confirmation shows an order number</span>
         
         
-        <span class="node-dur">47ms</span>
+        <span class="node-dur">48ms</span>
         <span class="node-evidence"><a class="thumb-link" onclick="openLightbox(this.dataset.src)" data-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iNzYwIiB2aWV3Qm94PSIwIDAgMzYwIDc2MCI+CiAgICA8cmVjdCB3aWR0aD0iMzYwIiBoZWlnaHQ9Ijc2MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3Qgd2lkdGg9IjM2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMwY2EzMGMiLz4KICAgIDx0ZXh0IHg9IjI0IiB5PSI2NiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmYiPk9yZGVyIHBsYWNlZDwvdGV4dD4KICAgIDxnIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj48cmVjdCB4PSIyNCIgeT0iMTUwIiB3aWR0aD0iMzEyIiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmMWYzZjUiLz48dGV4dCB4PSI0MCIgeT0iMTgwIiBmb250LXNpemU9IjE2IiBmaWxsPSIjMzMzIj5PcmRlciAjQTEwNDI8L3RleHQ+PHJlY3QgeD0iMjQiIHk9IjIxNCIgd2lkdGg9IjMxMiIgaGVpZ2h0PSI0OCIgcng9IjEwIiBmaWxsPSIjZjFmM2Y1Ii8+PHRleHQgeD0iNDAiIHk9IjI0NCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzMzMyI+QXJyaXZpbmcgVGh1cnNkYXk8L3RleHQ+PC9nPgogICAgPHJlY3QgeD0iMjQiIHk9IjY2MCIgd2lkdGg9IjMxMiIgaGVpZ2h0PSI1NiIgcng9IjI4IiBmaWxsPSIjMGNhMzBjIi8+CiAgPC9zdmc+">View</a></span>
         
         
@@ -828,7 +828,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc">Sign out</span>
         
         <span class="step-count">2 steps</span>
-        <span class="mini" aria-hidden="true"><i style="width:26.923076923076923%"></i></span>
+        <span class="mini" aria-hidden="true"><i style="width:27.05798138869005%"></i></span>
         <span class="node-dur">378ms</span>
         <span class="node-evidence"></span>
       </summary>
@@ -839,7 +839,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Open the account menu">Open the account menu</span>
         
         
-        <span class="node-dur">146ms</span>
+        <span class="node-dur">149ms</span>
         <span class="node-evidence"></span>
         
         
@@ -851,7 +851,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Tap Sign out">Tap Sign out</span>
         
         
-        <span class="node-dur">232ms</span>
+        <span class="node-dur">229ms</span>
         <span class="node-evidence"></span>
         
         
@@ -866,8 +866,8 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc">Clean up</span>
         
         <span class="step-count">1 step</span>
-        <span class="mini" aria-hidden="true"><i style="width:6.695156695156696%"></i></span>
-        <span class="node-dur">94ms</span>
+        <span class="mini" aria-hidden="true"><i style="width:6.299212598425196%"></i></span>
+        <span class="node-dur">88ms</span>
         <span class="node-evidence"></span>
       </summary>
       
@@ -877,7 +877,7 @@ Actual: &quot;1&quot;</div>
         <span class="node-desc" title="Cancel the test order (if still open)">Cancel the test order (if still open)</span>
         
         
-        <span class="node-dur">94ms</span>
+        <span class="node-dur">88ms</span>
         <span class="node-evidence"></span>
         
         
@@ -966,36 +966,36 @@ Actual: &quot;1&quot;</div>
     <text x="32" y="83" class="axis" text-anchor="end">50%</text>
     <line x1="40" x2="928" y1="10" y2="10" class="grid"></line>
     <text x="32" y="14" class="axis" text-anchor="end">100%</text><path class="area" d="M40,148 L40.0,27.3 L217.6,44.5 L395.2,27.3 L572.8,61.8 L750.4,44.5 L928.0,27.3 L928,148 Z"></path><polyline class="series" points="40.0,27.3 217.6,44.5 395.2,27.3 572.8,61.8 750.4,44.5 928.0,27.3"></polyline>
-    <g class="hit tip" data-tip="17/11 17:17 · 7 passed, 0 failed, 1 warned of 8 — 87.5% passed">
+    <g class="hit tip" data-tip="17/11 17:50 · 7 passed, 0 failed, 1 warned of 8 — 87.5% passed">
       <rect x="-48.8" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="40" x2="40" y1="10" y2="148"></line>
       <circle class="pt" cx="40" cy="27.25" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="17/11 21:17 · 6 passed, 1 failed, 1 warned of 8 — 75.0% passed">
+    <g class="hit tip" data-tip="17/11 21:50 · 6 passed, 1 failed, 1 warned of 8 — 75.0% passed">
       <rect x="128.8" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="217.60000000000002" x2="217.60000000000002" y1="10" y2="148"></line>
       <circle class="pt fail" cx="217.60000000000002" cy="44.5" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 01:17 · 7 passed, 0 failed, 1 warned of 8 — 87.5% passed">
+    <g class="hit tip" data-tip="18/11 01:50 · 7 passed, 0 failed, 1 warned of 8 — 87.5% passed">
       <rect x="306.40000000000003" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="395.20000000000005" x2="395.20000000000005" y1="10" y2="148"></line>
       <circle class="pt" cx="395.20000000000005" cy="27.25" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 05:17 · 5 passed, 2 failed, 1 warned of 8 — 62.5% passed">
+    <g class="hit tip" data-tip="18/11 05:50 · 5 passed, 2 failed, 1 warned of 8 — 62.5% passed">
       <rect x="483.99999999999994" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="572.8" x2="572.8" y1="10" y2="148"></line>
       <circle class="pt fail" cx="572.8" cy="61.75" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 17:17 · 6 passed, 1 failed, 1 warned of 8 — 75.0% passed">
+    <g class="hit tip" data-tip="18/11 17:50 · 6 passed, 1 failed, 1 warned of 8 — 75.0% passed">
       <rect x="661.6000000000001" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="750.4000000000001" x2="750.4000000000001" y1="10" y2="148"></line>
       <circle class="pt fail" cx="750.4000000000001" cy="44.5" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 23:17 · 7 passed, 1 failed, 0 warned of 8 — 87.5% passed">
+    <g class="hit tip" data-tip="18/11 23:50 · 7 passed, 1 failed, 0 warned of 8 — 87.5% passed">
       <rect x="839.2" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="928" x2="928" y1="10" y2="148"></line>
       <circle class="pt fail" cx="928" cy="27.25" r="4.5"></circle>
-    </g><text x="40" y="165" class="axis" text-anchor="start">17/11 17:17</text><text x="217.60000000000002" y="165" class="axis" text-anchor="middle">17/11 21:17</text><text x="395.20000000000005" y="165" class="axis" text-anchor="middle">18/11 01:17</text><text x="572.8" y="165" class="axis" text-anchor="middle">18/11 05:17</text><text x="750.4000000000001" y="165" class="axis" text-anchor="middle">18/11 17:17</text><text x="928" y="165" class="axis now" text-anchor="end">this run</text></svg>
+    </g><text x="40" y="165" class="axis" text-anchor="start">17/11 17:50</text><text x="217.60000000000002" y="165" class="axis" text-anchor="middle">17/11 21:50</text><text x="395.20000000000005" y="165" class="axis" text-anchor="middle">18/11 01:50</text><text x="572.8" y="165" class="axis" text-anchor="middle">18/11 05:50</text><text x="750.4000000000001" y="165" class="axis" text-anchor="middle">18/11 17:50</text><text x="928" y="165" class="axis now" text-anchor="end">this run</text></svg>
       <div class="chart-head"><span>Execution time per run</span><span class="muted">longest 1m 32s</span></div>
       <svg viewBox="0 0 940 170" class="svg-chart line-chart" role="img" aria-label="Execution time over the last 6 runs">
     <line x1="40" x2="928" y1="148" y2="148" class="grid"></line>
@@ -1004,36 +1004,36 @@ Actual: &quot;1&quot;</div>
     <text x="32" y="83" class="axis" text-anchor="end">1m</text>
     <line x1="40" x2="928" y1="10" y2="10" class="grid"></line>
     <text x="32" y="14" class="axis" text-anchor="end">2m</text><path class="area" d="M40,148 L40.0,77.9 L217.6,62.9 L395.2,81.3 L572.8,42.2 L750.4,72.1 L928.0,142.4 L928,148 Z"></path><polyline class="series" points="40.0,77.9 217.6,62.9 395.2,81.3 572.8,42.2 750.4,72.1 928.0,142.4"></polyline>
-    <g class="hit tip" data-tip="17/11 17:17 · 7 passed, 0 failed, 1 warned of 8 — 1m 1s">
+    <g class="hit tip" data-tip="17/11 17:50 · 7 passed, 0 failed, 1 warned of 8 — 1m 1s">
       <rect x="-48.8" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="40" x2="40" y1="10" y2="148"></line>
       <circle class="pt" cx="40" cy="77.85000000000001" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="17/11 21:17 · 6 passed, 1 failed, 1 warned of 8 — 1m 14s">
+    <g class="hit tip" data-tip="17/11 21:50 · 6 passed, 1 failed, 1 warned of 8 — 1m 14s">
       <rect x="128.8" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="217.60000000000002" x2="217.60000000000002" y1="10" y2="148"></line>
       <circle class="pt fail" cx="217.60000000000002" cy="62.89999999999999" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 01:17 · 7 passed, 0 failed, 1 warned of 8 — 58s">
+    <g class="hit tip" data-tip="18/11 01:50 · 7 passed, 0 failed, 1 warned of 8 — 58s">
       <rect x="306.40000000000003" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="395.20000000000005" x2="395.20000000000005" y1="10" y2="148"></line>
       <circle class="pt" cx="395.20000000000005" cy="81.3" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 05:17 · 5 passed, 2 failed, 1 warned of 8 — 1m 32s">
+    <g class="hit tip" data-tip="18/11 05:50 · 5 passed, 2 failed, 1 warned of 8 — 1m 32s">
       <rect x="483.99999999999994" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="572.8" x2="572.8" y1="10" y2="148"></line>
       <circle class="pt fail" cx="572.8" cy="42.19999999999999" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 17:17 · 6 passed, 1 failed, 1 warned of 8 — 1m 6s">
+    <g class="hit tip" data-tip="18/11 17:50 · 6 passed, 1 failed, 1 warned of 8 — 1m 6s">
       <rect x="661.6000000000001" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="750.4000000000001" x2="750.4000000000001" y1="10" y2="148"></line>
       <circle class="pt fail" cx="750.4000000000001" cy="72.1" r="4.5"></circle>
     </g>
-    <g class="hit tip" data-tip="18/11 23:17 · 7 passed, 1 failed, 0 warned of 8 — 5s">
+    <g class="hit tip" data-tip="18/11 23:50 · 7 passed, 1 failed, 0 warned of 8 — 5s">
       <rect x="839.2" y="10" width="177.6" height="138" fill="transparent"></rect>
       <line class="guide" x1="928" x2="928" y1="10" y2="148"></line>
-      <circle class="pt fail" cx="928" cy="142.3949" r="4.5"></circle>
-    </g><text x="40" y="165" class="axis" text-anchor="start">17/11 17:17</text><text x="217.60000000000002" y="165" class="axis" text-anchor="middle">17/11 21:17</text><text x="395.20000000000005" y="165" class="axis" text-anchor="middle">18/11 01:17</text><text x="572.8" y="165" class="axis" text-anchor="middle">18/11 05:17</text><text x="750.4000000000001" y="165" class="axis" text-anchor="middle">18/11 17:17</text><text x="928" y="165" class="axis now" text-anchor="end">this run</text></svg>
+      <circle class="pt fail" cx="928" cy="142.4041" r="4.5"></circle>
+    </g><text x="40" y="165" class="axis" text-anchor="start">17/11 17:50</text><text x="217.60000000000002" y="165" class="axis" text-anchor="middle">17/11 21:50</text><text x="395.20000000000005" y="165" class="axis" text-anchor="middle">18/11 01:50</text><text x="572.8" y="165" class="axis" text-anchor="middle">18/11 05:50</text><text x="750.4000000000001" y="165" class="axis" text-anchor="middle">18/11 17:50</text><text x="928" y="165" class="axis now" text-anchor="end">this run</text></svg>
       <div class="muted small">6 runs recorded · 4 with failures · hover a point for details</div>
     </div>
     </div>
@@ -1045,7 +1045,7 @@ Actual: &quot;1&quot;</div>
         <div class="issue">
           <div class="issue-top">
             <span class="issue-label">Value mismatch</span>
-            <span class="issue-meta">3× in 3 of 6 runs · last 18/11 23:17</span>
+            <span class="issue-meta">3× in 3 of 6 runs · last 18/11 23:50</span>
           </div>
           <div class="track"><div class="bar" style="width:100%; background:var(--accent)"></div></div>
           <div class="issue-hint">The app showed a different value than expected — a real bug or a format change.</div>
@@ -1054,7 +1054,7 @@ Actual: &quot;1&quot;</div>
         <div class="issue">
           <div class="issue-top">
             <span class="issue-label">Network drop / timeout</span>
-            <span class="issue-meta">1× in 1 of 6 runs · last 17/11 21:17</span>
+            <span class="issue-meta">1× in 1 of 6 runs · last 17/11 21:50</span>
           </div>
           <div class="track"><div class="bar" style="width:33.33333333333333%; background:var(--accent)"></div></div>
           <div class="issue-hint">The request got no answer. Check the connection.</div>
@@ -1063,7 +1063,7 @@ Actual: &quot;1&quot;</div>
         <div class="issue">
           <div class="issue-top">
             <span class="issue-label">Element not found</span>
-            <span class="issue-meta">1× in 1 of 6 runs · last 18/11 05:17</span>
+            <span class="issue-meta">1× in 1 of 6 runs · last 18/11 05:50</span>
           </div>
           <div class="track"><div class="bar" style="width:33.33333333333333%; background:var(--accent)"></div></div>
           <div class="issue-hint">A screen changed, or a sheet/tooltip/dialog covered it.</div>
@@ -1075,7 +1075,7 @@ Actual: &quot;1&quot;</div>
       <table>
         <thead><tr><th>Step that failed or was retried</th><th>Verdict</th><th>Cause</th><th class="num">Failed in</th><th class="num">Retried in</th><th>Last runs</th><th class="num">Last</th></tr></thead>
         <tbody>
-          <tr><td title="Checkout">Payment page loads</td><td><span class="flaky-chip" title="passed on a retry in 2 run(s)">flaky</span></td><td><span class="chip">Network drop / timeout</span></td><td class="num">1/6</td><td class="num">2</td><td><span class="strip" role="img" aria-label="failed, passed on a retry, passed, did not run, passed on a retry"><i class="f" title="failed"></i><i class="r" title="passed on a retry"></i><i class="p" title="passed"></i><i class="n" title="did not run"></i><i class="r" title="passed on a retry"></i></span></td><td class="num">18/11 23:17</td></tr><tr><td title="Add to cart">Cart total matches the price</td><td><span class="chip bad" title="Failed in every run it ran in since it first failed">consistent</span></td><td><span class="chip">Value mismatch</span></td><td class="num">3/6</td><td class="num">0</td><td><span class="strip" role="img" aria-label="failed, failed, failed"><i class="f" title="failed"></i><i class="f" title="failed"></i><i class="f" title="failed"></i></span></td><td class="num">18/11 23:17</td></tr><tr><td title="Search for a product">Results list is shown</td><td><span class="chip" title="Failed, then kept passing">fixed?</span></td><td><span class="chip">Element not found</span></td><td class="num">1/6</td><td class="num">0</td><td><span class="strip" role="img" aria-label="failed, passed, passed"><i class="f" title="failed"></i><i class="p" title="passed"></i><i class="p" title="passed"></i></span></td><td class="num">18/11 05:17</td></tr>
+          <tr><td title="Checkout">Payment page loads</td><td><span class="flaky-chip" title="passed on a retry in 2 run(s)">flaky</span></td><td><span class="chip">Network drop / timeout</span></td><td class="num">1/6</td><td class="num">2</td><td><span class="strip" role="img" aria-label="failed, passed on a retry, passed, did not run, passed on a retry"><i class="f" title="failed"></i><i class="r" title="passed on a retry"></i><i class="p" title="passed"></i><i class="n" title="did not run"></i><i class="r" title="passed on a retry"></i></span></td><td class="num">18/11 23:50</td></tr><tr><td title="Add to cart">Cart total matches the price</td><td><span class="chip bad" title="Failed in every run it ran in since it first failed">consistent</span></td><td><span class="chip">Value mismatch</span></td><td class="num">3/6</td><td class="num">0</td><td><span class="strip" role="img" aria-label="failed, failed, failed"><i class="f" title="failed"></i><i class="f" title="failed"></i><i class="f" title="failed"></i></span></td><td class="num">18/11 23:50</td></tr><tr><td title="Search for a product">Results list is shown</td><td><span class="chip" title="Failed, then kept passing">fixed?</span></td><td><span class="chip">Element not found</span></td><td class="num">1/6</td><td class="num">0</td><td><span class="strip" role="img" aria-label="failed, passed, passed"><i class="f" title="failed"></i><i class="p" title="passed"></i><i class="p" title="passed"></i></span></td><td class="num">18/11 05:50</td></tr>
         </tbody>
       </table>
     </div>

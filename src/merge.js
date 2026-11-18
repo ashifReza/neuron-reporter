@@ -48,6 +48,12 @@ function readRun(file) {
   const data = JSON.parse(fs.readFileSync(file, 'utf8'));
   const run = Array.isArray(data) ? { tree: data } : data;
   if (!Array.isArray(run.tree)) throw new Error(`${file}: expected an array of nodes or { tree: [...] }`);
+  // Catch the easy mistakes (a history file, some other JSON) instead of rendering nonsense.
+  const bad = run.tree.find((n) => !n || typeof n !== 'object' || typeof n.description !== 'string' || typeof n.status !== 'string');
+  if (bad) {
+    const looksLikeHistory = bad && typeof bad === 'object' && 'startedAt' in bad && ('cases' in bad || 'failures' in bad);
+    throw new Error(`${file}: ${looksLikeHistory ? 'this is a run-history file, not a test run' : 'not a neuron-reporter run (every node needs "description" and "status")'}`);
+  }
   absolutizeAttachments(run.tree, path.dirname(path.resolve(file)));
   const startTime = run.startedAt ? new Date(run.startedAt).getTime() : fs.statSync(file).mtimeMs;
   const duration = run.duration || run.tree.reduce((s, n) => s + (n.duration || 0), 0);
@@ -69,6 +75,7 @@ function mergeRuns(inputs) {
   const runInfo = Object.assign({}, ...runs.map((r) => r.runInfo || {}));
   delete runInfo.Started;
   delete runInfo.Finished;
+  delete runInfo.Shard; // one shard's own "2 of 4" means nothing in the merged report
   if (runs.length > 1) runInfo.Shards = `${runs.length} merged`;
   return {
     name: names[0] || path.basename(files[0], '.json').replace(/[-_.]?shard.*$/i, '') || 'merged',

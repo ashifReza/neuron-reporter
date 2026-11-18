@@ -196,6 +196,78 @@ test('merge: shard JSON files become one report and one history record', async (
   assert.equal(runs[0].shards, 2);
 });
 
+// ---------- found by running real Playwright 1.65 ----------
+
+test('Playwright: setup/teardown steps are hidden unless they failed', () => {
+  const s = (title, category, extra = {}) => ({ title, category, duration: 5, steps: [], ...extra });
+  const steps = [
+    s('Before Hooks', 'hook', { steps: [s('Fixture "browser"', 'fixture', { steps: [s('Launch browser', 'pw:api')] }), s('Create context', 'pw:api')] }),
+    s('Set content', 'pw:api'),
+    s('Pay', 'test.step', { steps: [s('Click', 'pw:api')] }),
+    s('After Hooks', 'hook', { steps: [s('Close context', 'pw:api')] }),
+  ];
+  const cats = ['test.step', 'expect', 'pw:api'];
+  assert.deepEqual(PlaywrightReporter.convertSteps(steps, cats).map((n) => n.description), ['Set content', 'Pay']);
+  const broken = [s('beforeEach hook', 'hook', { steps: [s('Click', 'pw:api', { error: { message: 'login button missing' } })] })];
+  const [node] = PlaywrightReporter.convertSteps(broken, cats);
+  assert.equal(node.status, 'FAILED');
+  assert.match(node.error, /login button missing/);
+});
+
+test('Playwright: test.fail() steps are warned, not failures; an id annotation becomes the test id', () => {
+  const reporter = new PlaywrightReporter({ outputFile: path.join(tmp(), 'r.html') });
+  reporter.onBegin({ projects: [{ name: 'chromium' }] }, {});
+  const t = { id: 'hash1', title: 'known bug', titlePath: () => ['', 'chromium', 'a.spec.ts', 'known bug'], outcome: () => 'expected', annotations: [{ type: 'fail' }, { type: 'id', description: 'cart.known-bug' }] };
+  reporter.onTestEnd(t, { status: 'failed', duration: 5, retry: 0, error: { message: 'Expected: "5"\nReceived: "0"' }, steps: [{ title: 'Expect "toHaveText"', category: 'expect', duration: 3, steps: [], error: { message: 'Expected: "5"\nReceived: "0"' } }], attachments: [], stdout: [], stderr: [] });
+  const [node] = reporter.buildTree();
+  assert.equal(node.status, 'COMPLETED');
+  assert.equal(node.id, 'cart.known-bug');
+  assert.equal(node.children[0].status, 'WARNED');
+  assert.match(node.children[0].detail, /Failed as expected/);
+  assert.deepEqual(history.collectFailures([node]), []);
+});
+
+test('classifier understands Playwright/Jest assertion and timeout messages', () => {
+  const c = require('../src').createClassifier();
+  assert.equal(c('Error: expect(locator).toHaveText(expected) failed\n\nLocator: locator(\'#total\')\nExpected: "$24.00"\nReceived: "$24"\nTimeout: 500ms').key, 'mismatch');
+  assert.equal(c('expect(received).toBe(expected) // Object.is equality\n\nExpected: 2\nReceived: 1').key, 'mismatch');
+  assert.equal(c('Error: expect(locator).toBeVisible() failed\n\nLocator: locator(\'#x\')\nExpected: visible\nError: element(s) not found').key, 'element');
+  assert.equal(c('Test timeout of 30000ms exceeded.').key, 'test-timeout');
+});
+
+test('steps under a test case with an id are keyed under the id, so renaming the case keeps them', () => {
+  const tree = (title) => [{ description: title, id: 'cart.add', status: 'COMPLETED', duration: 1, isGroup: true, children: [{ description: 'Tap Add', status: 'COMPLETED', duration: 1, isGroup: false, children: [] }] }];
+  assert.deepEqual(Object.keys(history.collectOutcomes(tree('adds an item'))), Object.keys(history.collectOutcomes(tree('adds one item to the cart'))));
+  assert.ok('id:cart.add › Tap Add' in history.collectOutcomes(tree('x')));
+});
+
+test('a merged report does not keep one shard\'s own "Shard" label', () => {
+  const dir = tmp();
+  for (const n of [1, 2]) fs.writeFileSync(path.join(dir, `s${n}.json`), JSON.stringify({ name: 's', runInfo: { Shard: `${n} of 2`, Runner: 'Playwright' }, tree: [{ description: `t${n}`, status: 'COMPLETED', duration: 1 }] }));
+  const merged = mergeRuns([dir]);
+  assert.equal(merged.runInfo.Shard, undefined);
+  assert.equal(merged.runInfo.Shards, '2 merged');
+  assert.equal(merged.runInfo.Runner, 'Playwright');
+});
+
+test('render/merge refuse a history file or unrelated JSON instead of rendering nonsense', () => {
+  const dir = tmp();
+  const hist = path.join(dir, 'history.json');
+  fs.writeFileSync(hist, JSON.stringify([{ startedAt: new Date().toISOString(), duration: 1, cases: {}, failures: [] }]));
+  const other = path.join(dir, 'package.json');
+  fs.writeFileSync(other, JSON.stringify({ tree: [{ name: 'x' }] }));
+  assert.throws(() => mergeRuns([hist]), /run-history file/);
+  assert.throws(() => mergeRuns([other]), /not a neuron-reporter run/);
+  let code = 0;
+  try {
+    execFileSync(process.execPath, [BIN, 'render', hist, '-o', path.join(dir, 'o.html')], { stdio: 'pipe' });
+  } catch (error) {
+    code = error.status;
+  }
+  assert.equal(code, 2);
+  assert.equal(fs.existsSync(path.join(dir, 'o.html')), false);
+});
+
 test('Playwright reporter in shard mode writes shard JSON and leaves history to the merge', () => {
   const dir = tmp();
   const reporter = new PlaywrightReporter({ outputFile: path.join(dir, 'pw', 'index.html'), title: 'e2e' });

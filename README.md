@@ -294,7 +294,14 @@ await report.step('Pay with saved card', () => pay(), { id: 'checkout.pay' });
 await report.group('Checkout', async () => { /* … */ }, { id: 'checkout' });
 ```
 
-The Playwright reporter uses Playwright's own test id, and the JUnit importer uses `classname::name`. In JSON input, set `"id"` on a node.
+Steps inside a test case with an `id` are keyed under that id, so they keep their history too.
+
+- **Playwright:** the reporter uses Playwright's test id. That id stays the same between runs, but it changes when you rename the test or move it to another file. To keep history across a rename, add an `id` annotation:
+  ```js
+  test('pays with a saved card', { annotation: { type: 'id', description: 'checkout.pay' } }, async ({ page }) => { /* … */ });
+  ```
+- **JUnit:** the importer uses `classname::name`.
+- **JSON input:** set `"id"` on a node.
 
 ## Options
 
