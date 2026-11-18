@@ -37,15 +37,15 @@ function seedHistory() {
   const file = history.historyFile(HISTORY_DIR, NAME);
   if (fs.existsSync(file)) fs.unlinkSync(file);
   const past = [
-    { h: 30, cases: [7, 0, 1], dur: 61000, failures: [] },
-    { h: 26, cases: [6, 1, 1], dur: 74000, failures: [{ testCase: 'Checkout', step: 'Payment page loads', category: 'network', message: 'GET /api/payments failed (network): fetch failed' }] },
-    { h: 22, cases: [7, 0, 1], dur: 58000, failures: [], flaky: [{ testCase: 'Checkout', step: 'Payment page loads', attempts: 2 }] },
-    { h: 18, cases: [5, 2, 1], dur: 92000, failures: [
+    { h: 30, cases: [7, 0, 1], dur: 4100, failures: [] },
+    { h: 26, cases: [6, 1, 1], dur: 5600, failures: [{ testCase: 'Checkout', step: 'Payment page loads', category: 'network', message: 'GET /api/payments failed (network): fetch failed' }] },
+    { h: 22, cases: [7, 0, 1], dur: 3900, failures: [], flaky: [{ testCase: 'Checkout', step: 'Payment page loads', attempts: 2 }] },
+    { h: 18, cases: [5, 2, 1], dur: 7300, failures: [
       { testCase: 'Search for a product', step: 'Results list is shown', category: 'element', message: 'element ("~results-list") still not displayed after 15000ms' },
       { testCase: 'Add to cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' },
     ] },
     // Recorded with per-step outcomes: the payment step did not run this time.
-    { h: 6, cases: [6, 1, 1], dur: 66000, failures: [{ testCase: 'Add to cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' }], outcomes: { 'Add to cart › Cart total matches the price': 'F', 'Search for a product › Results list is shown': 'P' } },
+    { h: 6, cases: [6, 1, 1], dur: 4800, failures: [{ testCase: 'Add to cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' }], outcomes: { 'Add to cart › Cart total matches the price': 'F', 'Search for a product › Results list is shown': 'P' } },
   ];
   const runs = past.map((r) => ({
     startedAt: new Date(Date.now() - r.h * 3600e3).toISOString(),

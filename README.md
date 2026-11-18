@@ -14,51 +14,150 @@ A self-contained HTML test report for UI automation. You record your test as nam
 - **Safe to share.** [Secret redaction](#secret-redaction) is on by default. Tokens, passwords, keys and secret env values are hidden in the report and the history.
 - **Light and dark themes**, readable at phone width, and printable.
 
-## Screenshots
+## Contents
 
-Every report has four tabs. These come from the bundled example (`npm run example`).
-
-### Overview
-
-Pass rate, step pass rate, execution time and failure triage at a glance, with the failures of this run, the run details and the slowest steps.
-
-![Overview tab](docs/overview.png)
-
-### Test cases
-
-Every test case with its steps, timings, assertions and errors. Filter by status, search, and expand or collapse cases.
-
-![Test cases tab](docs/test-cases.png)
-
-### Screenshots
-
-The checkpoint screenshots of the run in order, with the failure screenshot highlighted.
-
-![Screenshots tab](docs/screenshots.png)
-
-### Trends
-
-Pass rate and execution time over recent runs, the causes that keep coming back, and the steps that fail most often.
-
-![Trends tab](docs/trends.png)
-
-Try it without any app or device:
-
-```bash
-npm run example        # writes examples/sample-report.html
-```
+- [Walkthrough: from zero to a report in five steps](#walkthrough)
+- [What's new in 1.1 and 1.2](#whats-new-in-11-and-12)
+- Reference: [StepReporter](#recording-steps-with-stepreporter) · [WebdriverIO / Appium](#webdriverio--appium) · [Playwright](#playwright-test-reporter-one-line-setup) · [Maestro](#maestro) · [JUnit XML](#junit-xml-any-language) · [GitHub Action](#github-action) · [Shards](#shards-and-parallel-jobs) · [Redaction](#secret-redaction) · [Step identity](#stable-step-identity) · [Options](#options) · [History](#run-history) · [Failure classification](#failure-classification) · [CLI and JSON format](#cli-and-the-tree-format)
 
 ---
 
-## Install
+## Walkthrough
+
+Want to look before installing anything? Clone the repo and run `npm run example`. It writes [`examples/sample-report.html`](examples/sample-report.html) from a made-up "Demo Store" run, which is what all the screenshots below show.
+
+### 1. Install
 
 ```bash
 npm install --save-dev neuron-reporter
 ```
 
-You need Node 18 or newer. TypeScript types are included. (Before the npm release, install from GitHub: `npm install --save-dev github:ashifReza/neuron-reporter`.)
+You need Node 18 or newer, and TypeScript types are included. Until the package is on npm, install it from GitHub with `npm install --save-dev github:ashifReza/neuron-reporter`.
 
-## Quick start
+### 2. Connect it to your tests
+
+Pick the row that matches how you test. Each one ends with the same kind of HTML report.
+
+| You use | Do this | Details |
+|---|---|---|
+| **Playwright Test** | Add one line to `playwright.config` | [Playwright reporter](#playwright-test-reporter-one-line-setup) |
+| **WebdriverIO / Appium** (or any JS code) | Wrap actions in `report.step(...)` | [StepReporter](#recording-steps-with-stepreporter) |
+| **Maestro** | Run `npx neuron-reporter maestro <flow>` after the flow | [Maestro](#maestro) |
+| **pytest, JUnit/TestNG, Gradle, Go, .NET, Jest, Cypress…** | Have your runner write JUnit XML, then run `npx neuron-reporter junit <file or folder>` | [JUnit XML](#junit-xml-any-language) |
+| **Anything else** | Write JSON that follows [the schema](schema/run.schema.json), then run `npx neuron-reporter render run.json` | [CLI](#cli-and-the-tree-format) |
+
+The two most common setups look like this:
+
+```js
+// Playwright: playwright.config.js. No changes to your tests.
+module.exports = {
+  retries: 2,
+  reporter: [['list'], ['neuron-reporter/playwright-reporter', { outputFile: 'neuron-report/index.html' }]],
+  use: { screenshot: 'only-on-failure', video: 'retain-on-failure', trace: 'retain-on-failure' },
+};
+```
+
+```js
+// Any JS test (WebdriverIO, Appium, plain Node): name your steps.
+const { StepReporter } = require('neuron-reporter');
+const wdio = require('neuron-reporter/adapters/webdriverio');
+
+const report = new StepReporter('checkout', { screenshot: wdio.screenshot(), retries: 1 });
+
+await report.group('Add to cart', async () => {
+  await report.step('Tap Add to cart', () => $('~add').click());
+  await report.softStep('Cart badge shows 1', async () => {
+    const badge = await $('~badge').getText();
+    if (badge !== '1') throw new Error(`Expected "1" but screen shows "${badge}"`);
+  });
+});
+
+report.writeReport('reports/checkout.html');
+report.assertNoFailures(); // the test still fails if a softStep failed
+```
+
+### 3. Run your tests and open the report
+
+Run your tests as usual. The console prints one line and the report's path:
+
+```text
+📊 7/8 test cases passed, 1 failed, 0 warned, 1 flaky — 5s → reports/checkout.html
+```
+
+Open that file in any browser. It's a single file, so you can also attach it to a CI run, a ticket or an email. Next to it there's a small `history/` folder, which feeds the Trends tab.
+
+### 4. Read the report
+
+**Overview: is this run OK, and if not, why?** The headline gives pass/fail counts. The four tiles show pass rate (with a trend line), step pass rate, run time, and a **triage** count that sorts failures into *defects*, *needs triage* and *environment*. Below them, every failure links to its test case. **Flaky this run** lists steps that failed and then passed on a retry, and **Slowest steps** shows where the time went.
+
+![Overview tab](docs/overview.png)
+
+**Test cases: what exactly happened.** Every test case expands into its steps, with timings, errors and what each check compared. Filter by *Failed / Warned / Passed / Flaky*, or search. A retried step shows its attempts (`#1 ✕ 303ms`, `#2 ✓ 650ms`) and the first failure's message. Logs, JSON, videos and traces attached to the step open in place.
+
+![A flaky step with its attempts, a log and a JSON attachment](docs/flaky-step.png)
+
+**Screenshots and Attachments: the evidence in one place.** The Screenshots tab shows every checkpoint image in order, with the failure screenshot outlined in red. The Attachments tab lists every log, video, trace and file, grouped by step.
+
+![Screenshots tab](docs/screenshots.png)
+
+**Trends: is it getting better or worse?** Pass rate and run time over recent runs, the causes that keep coming back, and a verdict for every step that failed or needed a retry:
+
+- **flaky:** it fails sometimes, so stabilise the test or the environment.
+- **consistent:** it fails every run, so it's probably a real bug.
+- **fixed?:** it failed before but has passed since.
+
+The coloured squares are that step's recent runs: red failed, amber passed on a retry, green passed, outlined didn't run.
+
+![Trends tab](docs/trends.png)
+
+### 5. Run it in CI
+
+The report becomes more useful the more history it has, so keep the `history/` folder between CI runs. On GitHub Actions, the bundled action does that for you, uploads the report, and adds a summary to the job:
+
+```yaml
+- run: pytest --junitxml=results/junit.xml   # or any runner that writes JUnit XML
+- uses: ashifReza/neuron-reporter@v1
+  if: always()
+  with:
+    input: results          # file(s) or folder(s)
+    title: api-tests        # keep it stable so trends line up
+```
+
+With the Playwright reporter, add `jsonFile: 'neuron-report/run.json'` to its options, then use `command: render` and `input: neuron-report/run.json`. On other CI systems, run the CLI and cache `<report folder>/history`. The exit code is `0` when everything passed and `1` when a test failed, so a pipeline can gate on it. Splitting a suite across several machines? Each shard writes JSON, and `neuron-reporter merge` turns them into [one report](#shards-and-parallel-jobs).
+
+That's the whole loop. The sections below cover every option.
+
+---
+
+## What's new in 1.1 and 1.2
+
+**Retries and flaky detection.** Retry a step with `report.step(name, fn, { retries: 2 })`, or let Playwright retry tests. A test or step that passes on a retry is marked **flaky**, and every attempt is kept. Each run lists its flaky steps:
+
+![Flaky this run card](docs/flaky-card.png)
+
+Across runs, each step gets a verdict that separates intermittent failures from real regressions. It also knows when a step didn't run at all, so a step skipped after an earlier failure isn't mistaken for a pass:
+
+![Flaky, consistent and fixed? verdicts](docs/flaky-verdicts.png)
+
+**Videos, traces, logs and files on every step.** Use `attach()`, `attachLog()`, `attachVideo()`, `attachFile()` and `attachLink()`, or get them automatically from the Playwright reporter. Here is a real Playwright test that failed once and passed on retry: the first attempt's video, trace and error context are kept, and the test's stdout is shown with its secrets hidden.
+
+![A real Playwright flaky test with video, trace and redacted stdout](docs/playwright-flaky-test.png)
+
+**Every language, through JUnit XML.** `neuron-reporter junit` reads what pytest, Maven/Gradle (JUnit, TestNG), Go, .NET, Jest, Cypress and Robot Framework already write. That includes Surefire's reruns, so flaky detection works for Java too. [More →](#junit-xml-any-language)
+
+**One report from many machines.** `neuron-reporter merge` combines shards or parallel jobs into one report and one history record. Playwright's `--shard` is handled automatically. History writes are now safe when several processes write at once. [More →](#shards-and-parallel-jobs)
+
+**Secrets stay out of the report.** Bearer tokens, passwords, API keys, JWTs, credentials in URLs and secret-looking environment variables are replaced with `••••••` in the report, the history and shard files. It's on by default. [More →](#secret-redaction)
+
+**Stable history.** Steps keep their history when you rename them if you give them an `id`. [More →](#stable-step-identity)
+
+**Also new:** a [GitHub Action](#github-action), TypeScript types, ESM support, a [JSON Schema](schema/run.schema.json) for the input format, and failure triage that understands Playwright/Jest assertion output and test timeouts. See the [CHANGELOG](CHANGELOG.md) for the full list.
+
+---
+
+## Recording steps with StepReporter
+
+Use this in WebdriverIO, Appium, Playwright (without the reporter) or any JS test. Name each action and check, and group them into test cases:
 
 ```js
 const { StepReporter } = require('neuron-reporter');
@@ -152,7 +251,19 @@ module.exports = {
 };
 ```
 
-Each test becomes a test case. Its `test.step()` blocks, `expect()` calls and page actions become steps. Playwright's retries become attempts, and a test that passes on a retry is marked flaky. The failure screenshot, the video and trace of every attempt, and stdout/stderr are attached. Options: `outputFile`, `title`, `history`, `stepCategories` (default `['test.step', 'expect', 'pw:api']`), `embed`, `maxEmbedBytes`, `rules`, `labels`.
+Each test becomes a test case. Its `test.step()` blocks, `expect()` calls and page actions become steps. Playwright's retries become attempts, and a test that passes on a retry is marked flaky. The failure screenshot, the video and trace of every attempt, and stdout/stderr are attached. Browser and page setup inside fixtures and hooks is hidden unless it fails. A `test.fail()` test that fails as expected counts as passed, and its failed steps show as warnings.
+
+Options:
+
+- `outputFile`: where the HTML report goes.
+- `title`: the report and history name.
+- `history`: `false` to turn history off, or `{ dir, maxRuns }`.
+- `stepCategories`: which step kinds to show. Default `['test.step', 'expect', 'pw:api']`.
+- `embed` and `maxEmbedBytes`: whether video/trace files are embedded or linked.
+- `jsonFile`: also write the run as JSON, for the GitHub Action or `merge`.
+- `redact`: secret redaction, on by default.
+- `rules`: extra failure-classification rules.
+- `labels`: pills shown in the report header.
 
 ## Playwright (manual steps)
 
@@ -394,6 +505,13 @@ The CLI exits with code `1` when any test case failed, so CI can use it. The ful
 ```bash
 npm test          # node:test, no dependencies
 npm run example   # regenerate examples/sample-report.html
+```
+
+The README screenshots in `docs/` come from the sample report. To regenerate them, install Playwright with Chromium (it isn't a dependency), then run the script. Pass it a report written by the Playwright reporter to also capture `playwright-flaky-test.png`:
+
+```bash
+npm i --no-save playwright && npx playwright install chromium
+node scripts/readme-screenshots.js [path/to/playwright-report.html]
 ```
 
 ## License

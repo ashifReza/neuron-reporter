@@ -35,6 +35,13 @@
 - **Merged reports** no longer show one shard's own "Shard N of M" row.
 - **Tests:** `npm test` no longer relies on the shell to expand `test/*.test.js`, which Windows `cmd.exe` doesn't do.
 - **Trends:** the "did not run" square is now clearly visible in dark mode.
+- **Attachments inside a test case** no longer pick up the test case row's bold, tall styling.
+- **Attachments tab:** attachments are grouped under one row per step, instead of repeating the step for each one.
+- **Execution-time chart:** it switches to seconds for short suites (under 2 minutes), so the line uses the chart's height instead of sitting at the bottom of a 1-minute axis.
+
+### Docs
+- **README:** a step-by-step walkthrough, a "What's new" section, and new screenshots of the current UI, including a real Playwright run.
+- **Screenshots:** `scripts/readme-screenshots.js` regenerates them.
 
 ### Changed
 - `render()` redacts by default. Pass `redact: false` for the old behaviour.

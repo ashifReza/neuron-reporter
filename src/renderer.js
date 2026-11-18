@@ -350,12 +350,16 @@ function renderHistory(runs) {
   const n = runs.length;
   const casesOf = (r) => STATUS_ORDER.reduce((s, k) => s + (r.cases?.[k] || 0), 0);
   const passRate = runs.map((r) => (casesOf(r) ? ((r.cases?.COMPLETED || 0) / casesOf(r)) * 100 : 0));
-  const durations = runs.map((r) => (r.duration || 0) / 60000);
+  // Seconds for short suites, minutes for long ones, so the line uses the chart's height.
+  const longest = Math.max(...runs.map((r) => r.duration || 0), 1);
+  const unit = longest < 120000 ? { ms: 1000, s: 's' } : { ms: 60000, s: 'm' };
+  const durations = runs.map((r) => (r.duration || 0) / unit.ms);
   const every = Math.max(1, Math.ceil(n / 6));
   const labels = runs.map((r, i) => (i === n - 1 ? 'this run' : i % every === 0 ? fmtWhen(r.startedAt) : ''));
   const tipBase = (r) => `${fmtWhen(r.startedAt)} · ${r.cases?.COMPLETED || 0} passed, ${r.cases?.FAILED || 0} failed, ${r.cases?.WARNED || 0} warned of ${casesOf(r)}`;
   const maxDur = Math.max(...durations, 0.1);
-  const durMax = maxDur <= 1 ? 1 : Math.ceil(maxDur / 2) * 2;
+  const step = unit.s === 's' ? (maxDur <= 10 ? 2 : maxDur <= 30 ? 10 : 20) : 2;
+  const durMax = maxDur <= 1 ? 1 : Math.ceil(maxDur / step) * step;
   const avgPass = passRate.reduce((a, b) => a + b, 0) / n;
   const failedRuns = runs.filter((r) => r.status === 'FAILED').length;
   const hollow = runs.map((r) => r.status === 'FAILED');
@@ -367,9 +371,9 @@ function renderHistory(runs) {
         tips: runs.map((r, i) => `${tipBase(r)} — ${passRate[i].toFixed(1)}% passed`),
         ariaLabel: `Pass rate over the last ${n} runs, average ${avgPass.toFixed(1)} percent`,
       })}
-      <div class="chart-head"><span>Execution time per run</span><span class="muted">longest ${fmtDuration(maxDur * 60000)}</span></div>
+      <div class="chart-head"><span>Execution time per run</span><span class="muted">longest ${fmtDuration(longest)}</span></div>
       ${lineChart({
-        values: durations, labels, yMax: durMax, yFmt: (t) => `${t % 1 ? t.toFixed(1) : t}m`, hollow,
+        values: durations, labels, yMax: durMax, yFmt: (t) => `${t % 1 ? t.toFixed(1) : t}${unit.s}`, hollow,
         tips: runs.map((r) => `${tipBase(r)} — ${fmtDuration(r.duration || 0)}`),
         ariaLabel: `Execution time over the last ${n} runs`,
       })}
@@ -422,14 +426,20 @@ function renderFlakyList(tree) {
 
 /** Every attachment in the run, grouped under the step it belongs to. */
 function renderAttachmentsTab(tree) {
-  const all = Attachments.collect(tree);
+  // One row per step, with all of that step's attachments under it.
+  const groups = [];
+  for (const a of Attachments.collect(tree)) {
+    const last = groups[groups.length - 1];
+    if (last && last.step === a.step && last.testCase === a.testCase) last.items.push(a);
+    else groups.push({ step: a.step, testCase: a.testCase, status: a.status, items: [a] });
+  }
   return `
     <div class="cases att-list">
-      ${all.map((a) => `
+      ${groups.map((g) => `
         <div class="node">
-          <span class="status-icon" style="background:${statusInfo(a.status).hex}">${statusInfo(a.status).icon}</span>
-          <span class="node-desc" title="${esc(a.step)}">${esc(a.step)} <span class="muted">· ${esc(a.testCase)}</span></span>
-          ${renderAttachments([a])}
+          <span class="status-icon" style="background:${statusInfo(g.status).hex}">${statusInfo(g.status).icon}</span>
+          <span class="node-desc" title="${esc(g.step)}">${esc(g.step)}${g.testCase !== g.step ? ` <span class="muted">· ${esc(g.testCase)}</span>` : ''}</span>
+          ${renderAttachments(g.items)}
         </div>`).join('')}
     </div>`;
 }
@@ -646,12 +656,12 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree: rawTr
 
   details.group { border-bottom: 1px solid var(--gridline); }
   details.group:last-child { border-bottom: none; }
-  details.group summary {
+  details.group > summary {
     display: flex; align-items: center; gap: 10px; padding: 11px 14px;
     font-size: 13px; font-weight: 600; cursor: pointer; list-style: none;
   }
-  details.group summary::-webkit-details-marker { display: none; }
-  details.group summary .node-desc { font-weight: 600; }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary .node-desc { font-weight: 600; }
   details.group .chevron { display: inline-block; transition: transform 0.15s ease; color: var(--text-muted); font-size: 11px; width: 10px; }
   details.group[open] > summary .chevron { transform: rotate(90deg); }
   .step-count {
@@ -660,9 +670,9 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree: rawTr
   }
   .group-children { background: var(--surface-2); }
   .group-children .node { padding-left: 56px; }
-  .group-children details.group summary { padding-left: 40px; }
+  .group-children details.group > summary { padding-left: 40px; }
   .group-children .group-children .node { padding-left: 82px; }
-  .group-children .group-children details.group summary { padding-left: 66px; }
+  .group-children .group-children details.group > summary { padding-left: 66px; }
 
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 10; cursor: zoom-out; }
   .lightbox.open { display: flex; }
@@ -814,7 +824,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree: rawTr
   .toolbar input { border-radius: 10px; padding: 8px 12px; }
   .toolbar button.ghost { border-radius: 10px; padding: 7px 12px; font-size: 13px; }
   .cases { border-radius: 14px; }
-  details.group summary { padding: 13px 16px; }
+  details.group > summary { padding: 13px 16px; }
   .cases > .node { padding-left: 36px; }
   .node-dur { min-width: 52px; text-align: right; }
   .mini { width: 90px; height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
