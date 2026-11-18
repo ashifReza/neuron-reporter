@@ -38,13 +38,14 @@ function seedHistory() {
   if (fs.existsSync(file)) fs.unlinkSync(file);
   const past = [
     { h: 30, cases: [7, 0, 1], dur: 61000, failures: [] },
-    { h: 26, cases: [6, 1, 1], dur: 74000, failures: [{ testCase: 'Pay', step: 'Payment page loads', category: 'network', message: 'GET /api/payments failed (network): fetch failed' }] },
-    { h: 22, cases: [7, 0, 1], dur: 58000, failures: [] },
+    { h: 26, cases: [6, 1, 1], dur: 74000, failures: [{ testCase: 'Checkout', step: 'Payment page loads', category: 'network', message: 'GET /api/payments failed (network): fetch failed' }] },
+    { h: 22, cases: [7, 0, 1], dur: 58000, failures: [], flaky: [{ testCase: 'Checkout', step: 'Payment page loads', attempts: 2 }] },
     { h: 18, cases: [5, 2, 1], dur: 92000, failures: [
-      { testCase: 'Search', step: 'Results list is shown', category: 'element', message: 'element ("~results-list") still not displayed after 15000ms' },
-      { testCase: 'Cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' },
+      { testCase: 'Search for a product', step: 'Results list is shown', category: 'element', message: 'element ("~results-list") still not displayed after 15000ms' },
+      { testCase: 'Add to cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' },
     ] },
-    { h: 6, cases: [6, 1, 1], dur: 66000, failures: [{ testCase: 'Cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' }] },
+    // Recorded with per-step outcomes: the payment step did not run this time.
+    { h: 6, cases: [6, 1, 1], dur: 66000, failures: [{ testCase: 'Add to cart', step: 'Cart total matches the price', category: 'mismatch', message: 'Expected "$24.00" but screen shows "$24"' }], outcomes: { 'Add to cart › Cart total matches the price': 'F', 'Search for a product › Results list is shown': 'P' } },
   ];
   const runs = past.map((r) => ({
     startedAt: new Date(Date.now() - r.h * 3600e3).toISOString(),
@@ -52,6 +53,8 @@ function seedHistory() {
     status: r.cases[1] ? 'FAILED' : 'WARNED',
     cases: { COMPLETED: r.cases[0], FAILED: r.cases[1], WARNED: r.cases[2] },
     failures: r.failures,
+    flaky: r.flaky || [],
+    ...(r.outcomes ? { outcomes: r.outcomes } : {}),
   }));
   fs.mkdirSync(HISTORY_DIR, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(runs, null, 1));
@@ -106,7 +109,17 @@ async function main() {
     show('Checkout', ['Ship to: 221B Example St', 'Card •••• 4242', 'Total  $24.00']);
     await report.step('Open checkout', () => sleep(360));
     await report.softStep('Shipping address is pre-filled', () => sleep(70));
-    await report.softStep('Payment page loads', () => sleep(640));
+    // Fails once with a 503, passes on the retry: recorded as flaky.
+    await report.softStep('Payment page loads', async ({ attempt }) => {
+      await sleep(attempt === 0 ? 300 : 640);
+      if (attempt === 0) throw new Error('GET /api/payments → 503 Service Unavailable');
+    }, { retries: 2 });
+    report.attachLog('network.log', [
+      '12:04:10.112  GET /api/payments            503  301ms',
+      '12:04:10.420  retry 1/2',
+      '12:04:11.064  GET /api/payments            200  640ms',
+    ]);
+    report.attach('payments response', { methods: ['card', 'paypal'], default: 'card', currency: 'USD' });
     await report.attachScreenshot('Checkout');
   });
 

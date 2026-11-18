@@ -5,9 +5,13 @@
 A self-contained HTML test report for UI automation. You record your test as named **steps** grouped into **test cases**. neuron-reporter writes one HTML file containing screenshots, failure triage and run history trends.
 
 - **One file, zero dependencies.** CSS, charts and scripts are all inline. Open it from disk, attach it to CI, or email it.
-- **Works with any runner.** It has adapters for WebdriverIO / Appium, Playwright and Maestro, and a CLI for anything that can write JSON.
+- **Works with any runner, in any language.** A one-line [Playwright Test reporter](#playwright-test-reporter-one-line-setup), adapters for WebdriverIO / Appium and Maestro, a [JUnit XML importer](#junit-xml-any-language) for pytest, TestNG, JUnit, Maven, Gradle, Go, .NET, Jest and Cypress, and a CLI for anything that can write [JSON](schema/run.schema.json).
 - **Built for QA work.** The report shows pass rate, step pass rate, execution time, the slowest steps, and failures sorted into *defects*, *needs triage* and *environment issues*.
+- **Retries and flaky detection.** Steps or tests that fail and then pass on a retry are marked **flaky**, with every attempt kept. Across runs, the Trends tab tells *flaky* steps (pass/fail flip-flops) from *consistent* failures.
+- **Evidence beyond screenshots.** Attach logs, text, JSON, videos, Playwright traces, files and links to any step.
 - **Run history.** Each run is appended to a small JSON file. The Trends tab draws pass rate and execution time over time and ranks the causes that keep coming back.
+- **CI-ready.** A [GitHub Action](#github-action) that keeps history between workflow runs, plus exit codes for any CI. [Shards and parallel jobs](#shards-and-parallel-jobs) merge into one report.
+- **Safe to share.** [Secret redaction](#secret-redaction) is on by default. Tokens, passwords, keys and secret env values are hidden in the report and the history.
 - **Light and dark themes**, readable at phone width, and printable.
 
 ## Screenshots
@@ -49,10 +53,10 @@ npm run example        # writes examples/sample-report.html
 ## Install
 
 ```bash
-npm install --save-dev github:ashifReza/neuron-reporter
+npm install --save-dev neuron-reporter
 ```
 
-You need Node 18 or newer.
+You need Node 18 or newer. TypeScript types are included. (Before the npm release, install from GitHub: `npm install --save-dev github:ashifReza/neuron-reporter`.)
 
 ## Quick start
 
@@ -91,8 +95,24 @@ Steps can also record extra evidence:
 |---|---|
 | `attachScreenshot(caption)` | Attaches a checkpoint image to the most recent step or group |
 | `attachDetail(text)` | Shows what a check compared, so a passing check is visible too |
+| `attach(name, content, { contentType })` | Attaches text, a `Buffer` or an object (shown as JSON) |
+| `attachLog(name, lines)` | Attaches log lines in a collapsible monospace block |
+| `attachVideo(name, file)` / `attachFile(name, file)` | Attaches a video, trace, HAR or any file. Files up to 8 MB are embedded, so the report stays one file. Bigger ones are linked relative to the report (`{ embed, maxEmbedBytes }`) |
+| `attachLink(name, url)` | Attaches a link, such as a CI job or a ticket |
 
-A step that fails captures a screenshot automatically when a `screenshot` function is configured.
+A step that fails captures a screenshot automatically when a `screenshot` function is configured. Every attachment also appears in the **Attachments** tab.
+
+### Retries and flaky steps
+
+```js
+// Retry this step up to 2 more times. fn receives the attempt number (0-based).
+await report.step('Payment page loads', ({ attempt }) => paymentPage.waitForLoad(), { retries: 2 });
+
+// Or for every step() and softStep() (never optionalStep):
+new StepReporter('checkout', { retries: 1, retryDelay: 500 });
+```
+
+A step that fails and then passes is **COMPLETED but flaky**. It gets a *flaky* badge, a list of its attempts and the first failure's message. The Overview tab has a *Flaky this run* card, and the Test cases tab has a *Flaky* filter. A step that fails every attempt is FAILED, with all its attempts listed. `report.flakySteps()` returns this run's flaky steps.
 
 ## WebdriverIO / Appium
 
@@ -119,7 +139,22 @@ afterEach(() => report.writeReport(`reports/${report.name}.html`));
 For Android you can also add the device model and the installed app version:
 `...runInfo.android({ udid: process.env.UDID, appPackage: 'com.example.app' })`.
 
-## Playwright
+## Playwright Test reporter (one-line setup)
+
+You don't need to change any test code. Add the reporter to `playwright.config`:
+
+```js
+// playwright.config.js
+module.exports = {
+  retries: 2,
+  reporter: [['list'], ['neuron-reporter/playwright-reporter', { outputFile: 'neuron-report/index.html' }]],
+  use: { screenshot: 'only-on-failure', video: 'retain-on-failure', trace: 'retain-on-failure' },
+};
+```
+
+Each test becomes a test case. Its `test.step()` blocks, `expect()` calls and page actions become steps. Playwright's retries become attempts, and a test that passes on a retry is marked flaky. The failure screenshot, the video and trace of every attempt, and stdout/stderr are attached. Options: `outputFile`, `title`, `history`, `stepCategories` (default `['test.step', 'expect', 'pw:api']`), `embed`, `maxEmbedBytes`, `rules`, `labels`.
+
+## Playwright (manual steps)
 
 ```js
 const { test } = require('@playwright/test');
@@ -147,6 +182,120 @@ npx neuron-reporter maestro login_flow -o reports/login.html          # newest r
 npx neuron-reporter maestro path/to/run/login_flow -o reports/login.html
 ```
 
+## JUnit XML (any language)
+
+Almost every test runner can write JUnit XML. Point the CLI at the files or folders:
+
+```bash
+npx neuron-reporter junit target/surefire-reports -o report.html            # Maven / JUnit / TestNG
+npx neuron-reporter junit build/test-results/test -o report.html --group class  # Gradle
+npx neuron-reporter junit results.xml -o report.html --title api-tests       # pytest --junitxml=results.xml
+```
+
+| Runner | How to get JUnit XML |
+|---|---|
+| pytest | `pytest --junitxml=results.xml` |
+| Maven Surefire / Failsafe | written to `target/surefire-reports` by default. Add `-Dsurefire.rerunFailingTestsCount=2` for flaky detection |
+| Gradle | written to `build/test-results/test` by default |
+| TestNG | `testng-results` → use the `junitreports` folder |
+| Go | `gotestsum --junitfile results.xml` |
+| .NET | `dotnet test --logger "junit;LogFilePath=results.xml"` (JunitXml.TestLogger) |
+| Jest | `jest-junit` |
+| Cypress / Playwright / WebdriverIO | their `junit` reporters |
+| Robot Framework | `robot --xunit results.xml` |
+
+The importer maps:
+
+- `<failure>` and `<error>` to FAILED, and `<skipped>` to SKIPPED.
+- Surefire's `<flakyFailure>` and `<rerunFailure>` to attempts. A test that passes after a rerun is flaky.
+- A test listed twice to a retry.
+- `<system-out>` and `<system-err>` to log attachments.
+- `[[ATTACHMENT|path]]` lines and `attachment` properties to file attachments.
+
+`--group suite|class` turns suites or classes into collapsible test cases.
+
+Prefer to write the report data yourself, from Python, Java or C#? Write JSON that follows [`schema/run.schema.json`](schema/run.schema.json) and run `neuron-reporter render`.
+
+## GitHub Action
+
+```yaml
+- run: pytest --junitxml=results/junit.xml
+- uses: ashifReza/neuron-reporter@v1
+  if: always()
+  with:
+    input: results                 # files or folders, space-separated
+    title: api-tests               # keep it stable so trends line up
+    fail-on-test-failure: true
+```
+
+The action restores and saves run history with the Actions cache, so the Trends tab keeps growing between workflow runs. It uploads the report as an artifact and writes a job summary. Its inputs are `command` (`junit` | `render` | `maestro`), `input`, `output`, `title`, `group`, `history`, `fail-on-flaky`, `fail-on-test-failure`, `upload-artifact` and `artifact-name`.
+
+To pass extra CLI flags, use `extra-args`, for example `extra-args: --redact ORDER-[0-9]+`.
+
+On other CI systems, run the CLI and cache `<report folder>/history`. The CLI exits with `0` when everything passed and `1` when a test case failed (or was flaky, with `--fail-on-flaky`). It exits with `2` when the CLI itself failed.
+
+## Shards and parallel jobs
+
+When a suite is split across CI jobs, each job writes its run as JSON instead of its own history entry. One final step then merges them, so you get one report and one history record for the whole suite.
+
+**Playwright:** run with `--shard=1/4` and the reporter does this by itself. Each shard writes `neuron-report/shards/shard-1-of-4.json` and skips history. Collect those files from every job, then merge:
+
+```bash
+npx neuron-reporter merge all-shards/ -o neuron-report/index.html
+```
+
+```yaml
+# GitHub Actions: test jobs upload neuron-report/shards/*.json as artifacts, then:
+merge-report:
+  needs: test
+  if: always()
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/download-artifact@v4
+      with: { pattern: shard-*, path: all-shards, merge-multiple: true }
+    - uses: ashifReza/neuron-reporter@v1
+      with: { command: merge, input: all-shards, title: e2e }
+```
+
+**StepReporter:** call `report.writeJSON('shards/<job>.json')` in each job instead of `writeReport()`, then run `neuron-reporter merge shards/`.
+
+**JUnit:** pass every job's XML to one `neuron-reporter junit` call.
+
+The merged run starts at the earliest shard's start and lasts until the latest shard's end, which is wall-clock time. Its test cases are listed in shard-file order. Attachment files that are linked rather than embedded must be uploaded along with the JSON, keeping the same relative paths.
+
+History is also safe when several processes write it at once, for example parallel workers on one machine or one shared folder. Writers take turns through a lock, and each write replaces the file atomically. A lock left behind by a crashed writer is taken over after 30 seconds. Runs that finish out of order are sorted by start time.
+
+## Secret redaction
+
+Reports and history files get shared, so text is redacted before it's written. This covers step names, errors, details, logs, text/JSON attachments, retry errors, run details and labels. It's on by default and hides:
+
+- `Authorization: Bearer …` and `Basic …` credentials, JWTs, and `user:password@` in URLs
+- `password=…`, `"token": "…"`, `api_key: …`, `client_secret=…` and similar key/value forms, including in JSON
+- AWS access keys, GitHub, GitLab, Slack and Stripe tokens, `sk-…` API keys, and private key blocks
+- the values of environment variables whose names look secret (`*PASSWORD*`, `*TOKEN*`, `*SECRET*`, `*API_KEY*`, `*OTP*`, `*PIN*`, …) that are 6+ characters long
+
+```js
+new StepReporter('login', {
+  redact: { values: [testUser.pin], patterns: [/ORDER-\d+/] }, // add your own
+  // redact: false,                                            // or turn it off
+});
+```
+
+The CLI has `--redact REGEX` (repeatable) and `--no-redact`. The Playwright reporter takes the same `redact` option. **Screenshots and videos can't be redacted**, so keep real secrets off screen in tests.
+
+## Stable step identity
+
+Run history tracks each step by its path, *test case › group › step*. Repeated names get ` #2`, ` #3`. Each run also records which steps actually ran, so the Trends tab can tell "did not run" (an outlined square) from "passed". A step skipped because an earlier one aborted the test is no longer counted as a pass, so it can't look flaky or fixed.
+
+Renaming a step starts a new history unless you give it an `id`:
+
+```js
+await report.step('Pay with saved card', () => pay(), { id: 'checkout.pay' });
+await report.group('Checkout', async () => { /* … */ }, { id: 'checkout' });
+```
+
+The Playwright reporter uses Playwright's own test id, and the JUnit importer uses `classname::name`. In JSON input, set `"id"` on a node.
+
 ## Options
 
 ```js
@@ -159,10 +308,13 @@ new StepReporter(name, {
   history,             // true (default) | false | { dir, maxRuns }
   rules,               // extra failure-classification rules, see below
   console,             // default true — live ✔ / ✘ lines while the test runs
+  retries,             // default 0 — retries for every step() / softStep()
+  retryDelay,          // default 0 — ms between attempts
+  redact,              // default on — false, or { values, patterns, env, replacement }
 });
 ```
 
-`writeReport(path)` returns `{ path, counts, historyFile }`. `toJSON()` returns the raw tree.
+`writeReport(path)` returns `{ path, counts, flaky, historyFile }`. `writeJSON(path)` writes the redacted run for `merge`. `toJSON()` returns the raw tree.
 
 ## Run history
 
@@ -170,7 +322,10 @@ By default each `writeReport()` appends the run to `<report folder>/history/<nam
 
 - **Pass rate per run** and **Execution time per run**, as line charts. Hover a point for details; hollow points are runs with failures.
 - **Common issues:** failure causes ranked by how often they occur, with an example and a hint.
-- **Steps that failed:** which steps fail most often across runs, which shows flaky steps.
+- **Steps that failed or were retried**, each with a verdict and a strip of its recent outcomes:
+  - **flaky:** it passed on a retry at least once, or switched between pass and fail two or more times.
+  - **consistent:** it failed in every run since it first failed, which is a real regression.
+  - **fixed?:** it failed, then kept passing.
 
 Add the history folder to `.gitignore`. Alternatively, cache it in CI so trends survive between pipeline runs.
 
@@ -198,10 +353,11 @@ new StepReporter('login', {
 ## CLI and the tree format
 
 ```bash
-npx neuron-reporter render run.json -o report.html [--title NAME] [--history DIR | --no-history]
+npx neuron-reporter render run.json -o report.html [--title NAME] [--history DIR | --no-history] [--fail-on-flaky] [--no-embed] [--redact REGEX] [--no-redact]
+npx neuron-reporter merge shards/ -o report.html   # several run files → one report
 ```
 
-The CLI exits with code `1` when any test case failed, so CI can use it. `run.json` is either what `report.toJSON()` returns, or a bare array of nodes:
+The CLI exits with code `1` when any test case failed, so CI can use it. The full format is in [`schema/run.schema.json`](schema/run.schema.json). Besides the fields below, any node can carry `attempts` (`[{ status, duration, error }]`, the last one is final), `flaky`, and `attachments` (`[{ name, contentType, body | dataUri | path }]`, with paths relative to the JSON file). `run.json` is either what `report.toJSON()` returns, or a bare array of nodes:
 
 ```json
 {
