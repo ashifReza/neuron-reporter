@@ -1,0 +1,138 @@
+name: neuron-reporter
+description: Turn test results (JUnit XML, a neuron-reporter JSON run, or a Maestro flow) into a self-contained HTML report with run-history trends, flaky detection and failure triage.
+author: ashifReza
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  command:
+    description: "junit, render, merge (JSON runs from shards / parallel jobs) or maestro"
+    required: false
+    default: junit
+  input:
+    description: "Path(s) to the results — JUnit XML files/directories (space-separated), a JSON run file, or a Maestro flow dir"
+    required: true
+  output:
+    description: Where to write the HTML report
+    required: false
+    default: neuron-report/index.html
+  title:
+    description: Report and history name (keep it stable between runs so trends line up)
+    required: false
+    default: ""
+  group:
+    description: "junit only: none, suite or class"
+    required: false
+    default: none
+  history:
+    description: Keep run history between workflow runs using the Actions cache
+    required: false
+    default: "true"
+  fail-on-flaky:
+    description: Fail the step when a test passed only on a retry
+    required: false
+    default: "false"
+  fail-on-test-failure:
+    description: Fail the step when a test case failed
+    required: false
+    default: "false"
+  upload-artifact:
+    description: Upload the report as a workflow artifact
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name of the uploaded artifact
+    required: false
+    default: neuron-report
+  extra-args:
+    description: "Extra CLI flags, space-separated, e.g. --redact ORDER-[0-9]+ or --no-redact"
+    required: false
+    default: ""
+
+outputs:
+  report:
+    description: Path to the generated HTML report
+    value: ${{ inputs.output }}
+  exit-code:
+    description: 0 when everything passed, 1 when a test case failed (or was flaky with fail-on-flaky)
+    value: ${{ steps.render.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Locate history folder
+      id: paths
+      shell: bash
+      env:
+        NR_OUTPUT: ${{ inputs.output }}
+      run: echo "history=$(dirname "$NR_OUTPUT")/history" >> "$GITHUB_OUTPUT"
+
+    - name: Restore run history
+      if: inputs.history == 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ steps.paths.outputs.history }}
+        key: neuron-history-${{ github.workflow }}-${{ inputs.title }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: |
+          neuron-history-${{ github.workflow }}-${{ inputs.title }}-${{ github.ref_name }}-
+          neuron-history-${{ github.workflow }}-${{ inputs.title }}-
+
+    - name: Render report
+      id: render
+      shell: bash
+      env:
+        NR_COMMAND: ${{ inputs.command }}
+        NR_INPUT: ${{ inputs.input }}
+        NR_OUTPUT: ${{ inputs.output }}
+        NR_TITLE: ${{ inputs.title }}
+        NR_GROUP: ${{ inputs.group }}
+        NR_HISTORY: ${{ inputs.history }}
+        NR_FAIL_ON_FLAKY: ${{ inputs.fail-on-flaky }}
+        NR_EXTRA: ${{ inputs.extra-args }}
+      run: |
+        args=("$NR_COMMAND")
+        read -r -a inputs <<< "$NR_INPUT"
+        args+=("${inputs[@]}" -o "$NR_OUTPUT")
+        [ -n "$NR_TITLE" ] && args+=(--title "$NR_TITLE")
+        [ "$NR_COMMAND" = "junit" ] && args+=(--group "$NR_GROUP")
+        # Split on spaces only (no shell evaluation of the input).
+        read -r -a extra <<< "$NR_EXTRA"
+        args+=("${extra[@]}")
+        [ "$NR_HISTORY" != "true" ] && args+=(--no-history)
+        [ "$NR_FAIL_ON_FLAKY" = "true" ] && args+=(--fail-on-flaky)
+        set +e
+        node "${{ github.action_path }}/bin/neuron-reporter.js" "${args[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        if [ "$code" -ge 2 ]; then exit "$code"; fi
+
+    - name: Save run history
+      if: always() && inputs.history == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ steps.paths.outputs.history }}
+        key: neuron-history-${{ github.workflow }}-${{ inputs.title }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+    - name: Upload report
+      if: always() && inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.output }}
+
+    - name: Job summary
+      if: always()
+      shell: bash
+      run: |
+        {
+          echo "### neuron-reporter"
+          echo ""
+          if [ "${{ steps.render.outputs.exit-code }}" = "0" ]; then echo "✅ All test cases passed."; else echo "❌ Some test cases failed (or were flaky). Download the **${{ inputs.artifact-name }}** artifact for the full report."; fi
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Fail on test failure
+      if: inputs.fail-on-test-failure == 'true' && steps.render.outputs.exit-code != '0'
+      shell: bash
+      run: exit 1

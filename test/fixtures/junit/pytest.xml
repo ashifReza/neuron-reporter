@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="pytest-suite">
+  <testsuite name="pytest" errors="0" failures="0" skipped="1" tests="3" time="2.0" timestamp="2026-11-18T09:59:00.000000">
+    <testcase classname="tests.test_login" name="test_login_ok" time="0.5">
+      <system-out>logged in as demo</system-out>
+    </testcase>
+    <testcase classname="tests.test_login" name="test_sso" time="0.0">
+      <skipped type="pytest.skip" message="SSO not configured">tests/test_login.py:12: SSO not configured</skipped>
+    </testcase>
+    <testcase classname="tests.test_search" name="test_search" time="0.7">
+      <failure message="TimeoutError">timed out waiting for results</failure>
+    </testcase>
+    <testcase classname="tests.test_search" name="test_search" time="0.8"/>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Maven Surefire style, with -Dsurefire.rerunFailingTestsCount=2 -->
+<testsuite name="com.example.CheckoutTest" tests="3" failures="1" errors="0" skipped="0" time="4.5" timestamp="2026-11-18T10:00:00">
+  <testcase name="addsItemToCart" classname="com.example.CheckoutTest" time="1.2"/>
+  <testcase name="paysWithCard" classname="com.example.CheckoutTest" time="1.8">
+    <flakyFailure message="503 Service Unavailable" type="java.io.IOException"><![CDATA[java.io.IOException: 503 Service Unavailable
+	at com.example.Api.get(Api.java:42)]]></flakyFailure>
+    <system-out>paying &amp; waiting
+[[ATTACHMENT|missing-video.webm]]</system-out>
+  </testcase>
+  <testcase name="showsTotal" classname="com.example.CheckoutTest" time="1.5">
+    <failure message="expected: &lt;$24.00&gt; but was: &lt;$24&gt;" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: expected: &lt;$24.00&gt; but was: &lt;$24&gt;</failure>
+    <rerunFailure message="expected: &lt;$24.00&gt; but was: &lt;$24&gt;" type="org.opentest4j.AssertionFailedError" time="1.4"/>
+  </testcase>
+</testsuite>

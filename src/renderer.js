@@ -12,6 +12,8 @@
 const fs = require('fs');
 const path = require('path');
 const ReportHistory = require('./history');
+const Redact = require('./redact');
+const Attachments = require('./attachments');
 
 // Brand mark: a neuron whose axon becomes a check mark. Inline SVG so the
 // report stays a single file; also used (URL-encoded) as the favicon.
@@ -71,12 +73,70 @@ function fmtDuration(ms) {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+/** Only http(s), relative paths and data: URIs may become links — never javascript: and the like. */
+function safeHref(href) {
+  const s = String(href || '');
+  if (/^(https?:|data:|\.{0,2}\/|[^:]*$)/i.test(s)) return s;
+  return '#';
+}
+
+const MAX_TEXT_ATTACHMENT = 200 * 1024;
+
+/** Logs, text, JSON, video, images, files and links attached to one step. */
+function renderAttachments(list) {
+  if (!list || !list.length) return '';
+  const items = list.map((a) => {
+    const kind = Attachments.kindOf(a);
+    const name = esc(a.name || 'attachment');
+    const size = a.size ? ` · ${fmtBytes(a.size)}` : '';
+    if (kind === 'text') {
+      const body = String(a.body);
+      const cut = body.length > MAX_TEXT_ATTACHMENT;
+      return `<details class="att"><summary><span class="att-icon">≡</span>${name}<span class="att-type">${esc(a.contentType || 'text')}${size}</span></summary><pre>${esc(cut ? body.slice(0, MAX_TEXT_ATTACHMENT) : body)}${cut ? '\n… (truncated)' : ''}</pre></details>`;
+    }
+    const src = esc(safeHref(a.dataUri || a.path));
+    if (kind === 'video') {
+      return `<details class="att"><summary><span class="att-icon">▶</span>${name}<span class="att-type">${esc(a.contentType)}${size}</span></summary><video controls preload="none" src="${src}"></video></details>`;
+    }
+    if (kind === 'image' && a.dataUri) {
+      return `<a class="att att-link" onclick="openLightbox(this.dataset.src)" data-src="${src}"><span class="att-icon">▣</span>${name}</a>`;
+    }
+    const isTrace = /trace/i.test(a.name || '') && /zip/.test(a.contentType || '');
+    const hint = isTrace ? '<span class="att-type">open with <code>npx playwright show-trace</code></span>' : `<span class="att-type">${esc(kind === 'link' ? 'link' : a.contentType || 'file')}${size}</span>`;
+    const dl = a.dataUri ? ` download="${esc(a.name || 'attachment')}"` : ' target="_blank" rel="noopener"';
+    return `<a class="att att-link" href="${src}"${dl}><span class="att-icon">↗</span>${name}${hint}</a>`;
+  });
+  return `<div class="node-attachments">${items.join('')}</div>`;
+}
+
+function fmtBytes(n) {
+  if (n >= 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  if (n >= 1024) return `${Math.round(n / 1024)} KB`;
+  return `${n} B`;
+}
+
+/** "Attempt 1 ✕ 1.2s · Attempt 2 ✓ 0.8s" with the first failure's message. */
+function renderAttempts(node) {
+  const attempts = node.attempts || [];
+  if (attempts.length < 2) return '';
+  const chips = attempts.map((a, i) => `<span class="attempt ${a.status === 'FAILED' ? 'bad' : 'ok'}" title="${esc(a.error || '')}">#${i + 1} ${statusInfo(a.status).icon} ${fmtMs(a.duration || 0)}</span>`).join('');
+  const firstErr = attempts.find((a) => a.status === 'FAILED' && a.error);
+  const msg = ReportHistory.isFlakyNode(node) && firstErr ? `<span class="attempt-msg">first failure: ${esc(firstErr.error.slice(0, 200))}</span>` : '';
+  return `<div class="node-attempts"><span class="attempt-label">${attempts.length} attempts</span>${chips}${msg}</div>`;
+}
+
+function hasFlaky(node) {
+  return ReportHistory.isFlakyNode(node) || (node.isGroup && (node.children || []).some(hasFlaky));
+}
+
 function renderNode(node, index) {
   const info = statusInfo(node.status);
-  const topAttrs = index === undefined ? '' : ` id="case-${index}" data-status="${node.status}" data-text="${esc(String(node.description).toLowerCase())}"`;
+  const flaky = hasFlaky(node);
+  const topAttrs = index === undefined ? '' : ` id="case-${index}" data-status="${node.status}" data-flaky="${flaky}" data-text="${esc(String(node.description).toLowerCase())}"`;
   const evidence = node.screenshot
-    ? `<a class="thumb-link" onclick="openLightbox('${node.screenshot.dataUri}')">View</a>`
+    ? `<a class="thumb-link" onclick="openLightbox(this.dataset.src)" data-src="${esc(node.screenshot.dataUri)}">View</a>`
     : '';
+  const flakyChip = flaky ? '<span class="flaky-chip" title="Failed at least once, then passed on a retry">flaky</span>' : '';
 
   if (!node.isGroup) {
     const errorHtml = node.status === 'FAILED' && node.error
@@ -92,11 +152,14 @@ function renderNode(node, index) {
       <div class="node"${topAttrs}>
         <span class="status-icon" style="background:${info.hex}">${info.icon}</span>
         <span class="node-desc" title="${esc(node.description)}">${esc(node.description)}</span>
+        ${flakyChip}
         ${index !== undefined ? `<span class="mini" aria-hidden="true"><i style="width:${Math.max(3, ((node.duration || 0) / CASE_MAX_DURATION) * 100)}%"></i></span>` : ''}
         <span class="node-dur">${fmtMs(node.duration)}</span>
         <span class="node-evidence">${evidence}</span>
+        ${renderAttempts(node)}
         ${errorHtml}
         ${detailHtml}
+        ${renderAttachments(node.attachments)}
       </div>`;
   }
 
@@ -111,11 +174,13 @@ function renderNode(node, index) {
         <span class="chevron">▸</span>
         <span class="status-icon" style="background:${info.hex}">${info.icon}</span>
         <span class="node-desc">${esc(node.description)}</span>
+        ${flakyChip}
         <span class="step-count">${leafCount} step${leafCount === 1 ? '' : 's'}</span>
         ${index !== undefined ? `<span class="mini" aria-hidden="true"><i style="width:${Math.max(3, ((node.duration || 0) / CASE_MAX_DURATION) * 100)}%"></i></span>` : ''}
         <span class="node-dur">${fmtMs(node.duration)}</span>
-        ${index !== undefined ? '<span class="node-evidence"></span>' : ''}
+        ${index !== undefined ? `<span class="node-evidence">${evidence}</span>` : ''}
       </summary>
+      ${(node.attachments && node.attachments.length) || (node.attempts && node.attempts.length > 1) || (node.error && node.status === 'FAILED') ? `<div class="group-attachments">${renderAttempts(node)}${node.error && node.status === 'FAILED' ? `<div class="node-error">${esc(node.error)}</div>` : ''}${renderAttachments(node.attachments)}</div>` : ''}
       <div class="group-children">${childrenHtml}</div>
     </details>`;
 }
@@ -285,12 +350,16 @@ function renderHistory(runs) {
   const n = runs.length;
   const casesOf = (r) => STATUS_ORDER.reduce((s, k) => s + (r.cases?.[k] || 0), 0);
   const passRate = runs.map((r) => (casesOf(r) ? ((r.cases?.COMPLETED || 0) / casesOf(r)) * 100 : 0));
-  const durations = runs.map((r) => (r.duration || 0) / 60000);
+  // Seconds for short suites, minutes for long ones, so the line uses the chart's height.
+  const longest = Math.max(...runs.map((r) => r.duration || 0), 1);
+  const unit = longest < 120000 ? { ms: 1000, s: 's' } : { ms: 60000, s: 'm' };
+  const durations = runs.map((r) => (r.duration || 0) / unit.ms);
   const every = Math.max(1, Math.ceil(n / 6));
   const labels = runs.map((r, i) => (i === n - 1 ? 'this run' : i % every === 0 ? fmtWhen(r.startedAt) : ''));
   const tipBase = (r) => `${fmtWhen(r.startedAt)} · ${r.cases?.COMPLETED || 0} passed, ${r.cases?.FAILED || 0} failed, ${r.cases?.WARNED || 0} warned of ${casesOf(r)}`;
   const maxDur = Math.max(...durations, 0.1);
-  const durMax = maxDur <= 1 ? 1 : Math.ceil(maxDur / 2) * 2;
+  const step = unit.s === 's' ? (maxDur <= 10 ? 2 : maxDur <= 30 ? 10 : 20) : 2;
+  const durMax = maxDur <= 1 ? 1 : Math.ceil(maxDur / step) * step;
   const avgPass = passRate.reduce((a, b) => a + b, 0) / n;
   const failedRuns = runs.filter((r) => r.status === 'FAILED').length;
   const hollow = runs.map((r) => r.status === 'FAILED');
@@ -302,9 +371,9 @@ function renderHistory(runs) {
         tips: runs.map((r, i) => `${tipBase(r)} — ${passRate[i].toFixed(1)}% passed`),
         ariaLabel: `Pass rate over the last ${n} runs, average ${avgPass.toFixed(1)} percent`,
       })}
-      <div class="chart-head"><span>Execution time per run</span><span class="muted">longest ${fmtDuration(maxDur * 60000)}</span></div>
+      <div class="chart-head"><span>Execution time per run</span><span class="muted">longest ${fmtDuration(longest)}</span></div>
       ${lineChart({
-        values: durations, labels, yMax: durMax, yFmt: (t) => `${t % 1 ? t.toFixed(1) : t}m`, hollow,
+        values: durations, labels, yMax: durMax, yFmt: (t) => `${t % 1 ? t.toFixed(1) : t}${unit.s}`, hollow,
         tips: runs.map((r) => `${tipBase(r)} — ${fmtDuration(r.duration || 0)}`),
         ariaLabel: `Execution time over the last ${n} runs`,
       })}
@@ -312,16 +381,80 @@ function renderHistory(runs) {
     </div>`;
 }
 
+function verdictChip(s) {
+  if (s.flaky) {
+    const why = s.retriedRuns ? `passed on a retry in ${s.retriedRuns} run(s)` : `switched between pass and fail ${s.flips} times`;
+    return `<span class="flaky-chip" title="${esc(why)}">flaky</span>`;
+  }
+  const notRun = s.notRun ? ` (did not run in ${s.notRun} run${s.notRun === 1 ? '' : 's'})` : '';
+  if (s.consistent) return `<span class="chip bad" title="${esc(`Failed in every run it ran in since it first failed${notRun}`)}">consistent</span>`;
+  return `<span class="chip" title="${esc(`Failed, then kept passing${notRun}`)}">fixed?</span>`;
+}
+
+const STRIP = { F: ['f', 'failed'], R: ['r', 'passed on a retry'], P: ['p', 'passed'], '-': ['n', 'did not run'] };
+
+/** Last up-to-12 outcomes as small squares: red failed, amber passed on retry, green passed, grey did not run. */
+function outcomeStrip(outcomes = []) {
+  const last = outcomes.slice(-12).map((o) => STRIP[o] || STRIP.P);
+  return `<span class="strip" role="img" aria-label="${last.map(([, label]) => label).join(', ')}">${last.map(([cls, label]) => `<i class="${cls}" title="${label}"></i>`).join('')}</span>`;
+}
+
+/** This run's steps that failed and then passed on a retry. */
+function renderFlakyList(tree) {
+  const flaky = [];
+  tree.forEach((n, index) => {
+    for (const f of ReportHistory.collectFlaky([n])) flaky.push({ ...f, index });
+  });
+  if (!flaky.length) return '';
+  return `
+    <div class="card">
+      <div class="card-head"><h2>Flaky this run <span class="count">${flaky.length}</span></h2><span class="card-hint">failed, then passed on a retry</span></div>
+      <div class="panel failure-list">
+        ${flaky.map((f) => `
+        <a class="failure" href="#case-${f.index}" onclick="openCase(${f.index}); return false;">
+          <span class="status-icon" style="background:${statusInfo('WARNED').hex}">↻</span>
+          <span class="failure-main">
+            <span class="failure-step">${esc(f.step)}</span>
+            <span class="failure-case">in ${esc(f.testCase)} · passed on attempt ${f.attempts}</span>
+            ${f.message ? `<span class="failure-msg">${esc(f.message.slice(0, 180))}</span>` : ''}
+          </span>
+          <span class="flaky-chip">flaky</span>
+        </a>`).join('')}
+      </div>
+    </div>`;
+}
+
+/** Every attachment in the run, grouped under the step it belongs to. */
+function renderAttachmentsTab(tree) {
+  // One row per step, with all of that step's attachments under it.
+  const groups = [];
+  for (const a of Attachments.collect(tree)) {
+    const last = groups[groups.length - 1];
+    if (last && last.step === a.step && last.testCase === a.testCase) last.items.push(a);
+    else groups.push({ step: a.step, testCase: a.testCase, status: a.status, items: [a] });
+  }
+  return `
+    <div class="cases att-list">
+      ${groups.map((g) => `
+        <div class="node">
+          <span class="status-icon" style="background:${statusInfo(g.status).hex}">${statusInfo(g.status).icon}</span>
+          <span class="node-desc" title="${esc(g.step)}">${esc(g.step)}${g.testCase !== g.step ? ` <span class="muted">· ${esc(g.testCase)}</span>` : ''}</span>
+          ${renderAttachments(g.items)}
+        </div>`).join('')}
+    </div>`;
+}
+
 /** Causes that keep coming back across all recorded runs. */
 function renderCommonIssues(runs) {
   const issues = ReportHistory.commonIssues(runs || [], CLASSIFY);
-  if (!issues.length) {
+  const anyFlaky = (runs || []).some((r) => (r.flaky || []).length);
+  if (!issues.length && !anyFlaky) {
     return `<div class="panel empty-ok"><span class="status-icon" style="background:${statusInfo('COMPLETED').hex}">✓</span> No failures recorded across ${runs?.length || 0} run(s).</div>`;
   }
   const max = Math.max(...issues.map((i) => i.count), 1);
   const steps = ReportHistory.flakySteps(runs).slice(0, 8);
   return `
-    <div class="panel">
+    <div class="panel"${issues.length ? '' : ' hidden'}>
       ${issues.map((i) => `
         <div class="issue">
           <div class="issue-top">
@@ -336,9 +469,9 @@ function renderCommonIssues(runs) {
     ${steps.length ? `
     <div class="panel table-panel">
       <table>
-        <thead><tr><th>Step that failed</th><th>Cause</th><th class="num">Failed in</th><th class="num">Last</th></tr></thead>
+        <thead><tr><th>Step that failed or was retried</th><th>Verdict</th><th>Cause</th><th class="num">Failed in</th><th class="num">Retried in</th><th>Last runs</th><th class="num">Last</th></tr></thead>
         <tbody>
-          ${steps.map((s) => `<tr><td title="${esc(s.testCase)}">${esc(s.step)}</td><td><span class="chip">${esc(CLASSIFY.info(s.category).label)}</span></td><td class="num">${s.failedRuns}/${runs.length}</td><td class="num">${fmtWhen(s.lastSeen)}</td></tr>`).join('')}
+          ${steps.map((s) => `<tr><td title="${esc(s.testCase)}">${esc(s.step)}</td><td>${verdictChip(s)}</td><td>${s.category ? `<span class="chip">${esc(CLASSIFY.info(s.category).label)}</span>` : '<span class="muted">—</span>'}</td><td class="num">${s.failedRuns}/${runs.length}</td><td class="num">${s.retriedRuns}</td><td>${outcomeStrip(s.outcomes)}</td><td class="num">${fmtWhen(s.lastSeen)}</td></tr>`).join('')}
         </tbody>
       </table>
     </div>` : ''}`;
@@ -356,9 +489,14 @@ function renderCommonIssues(runs) {
  * @param {Function} [opts.classify] - Failure classifier from history.createClassifier()
  * @returns {string} Self-contained HTML document
  */
-function render({ title, subtitle = '', envVars = {}, labels = null, tree, history = null, runInfo = null, highlights = [], classify = null }) {
+function render({ title, subtitle = '', envVars = {}, labels = null, tree: rawTree, history = null, runInfo: rawRunInfo = null, highlights: rawHighlights = [], classify = null, redact }) {
   CLASSIFY = classify || ReportHistory.defaultClassifier;
-  const pills = labels || envVars;
+  // Everything textual is redacted before it reaches the page (see redact.js).
+  const R = typeof redact === 'function' ? redact : Redact.createRedactor(redact === undefined ? {} : redact);
+  const tree = Redact.redactTree(rawTree, R);
+  const runInfo = Redact.redactObject(rawRunInfo, R);
+  const highlights = (rawHighlights || []).map((h) => (typeof h === 'string' ? R(h) : h));
+  const pills = Redact.redactObject(labels || envVars, R);
   const total = tree.length;
   const counts = { COMPLETED: 0, FAILED: 0, WARNED: 0, OTHER: 0 };
   let totalDuration = 0;
@@ -381,6 +519,9 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   const failuresNow = ReportHistory.collectFailures(tree, CLASSIFY);
   const triage = { defect: 0, script: 0, environment: 0 };
   for (const f of failuresNow) triage[CLASSIFY.info(f.category).type || 'script'] += 1;
+  const flakyNow = ReportHistory.collectFlaky(tree);
+  const flakyCases = tree.filter(hasFlaky).length;
+  const attachmentCount = Attachments.collect(tree).length;
 
   return `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -515,12 +656,12 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
 
   details.group { border-bottom: 1px solid var(--gridline); }
   details.group:last-child { border-bottom: none; }
-  details.group summary {
+  details.group > summary {
     display: flex; align-items: center; gap: 10px; padding: 11px 14px;
     font-size: 13px; font-weight: 600; cursor: pointer; list-style: none;
   }
-  details.group summary::-webkit-details-marker { display: none; }
-  details.group summary .node-desc { font-weight: 600; }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary .node-desc { font-weight: 600; }
   details.group .chevron { display: inline-block; transition: transform 0.15s ease; color: var(--text-muted); font-size: 11px; width: 10px; }
   details.group[open] > summary .chevron { transform: rotate(90deg); }
   .step-count {
@@ -529,9 +670,9 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   }
   .group-children { background: var(--surface-2); }
   .group-children .node { padding-left: 56px; }
-  .group-children details.group summary { padding-left: 40px; }
+  .group-children details.group > summary { padding-left: 40px; }
   .group-children .group-children .node { padding-left: 82px; }
-  .group-children .group-children details.group summary { padding-left: 66px; }
+  .group-children .group-children details.group > summary { padding-left: 66px; }
 
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 10; cursor: zoom-out; }
   .lightbox.open { display: flex; }
@@ -683,7 +824,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   .toolbar input { border-radius: 10px; padding: 8px 12px; }
   .toolbar button.ghost { border-radius: 10px; padding: 7px 12px; font-size: 13px; }
   .cases { border-radius: 14px; }
-  details.group summary { padding: 13px 16px; }
+  details.group > summary { padding: 13px 16px; }
   .cases > .node { padding-left: 36px; }
   .node-dur { min-width: 52px; text-align: right; }
   .mini { width: 90px; height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
@@ -700,6 +841,36 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
 
   @media print { .tabs, .theme-toggle, .toolbar { display: none; } .tab-panel { display: block !important; } }
 
+  /* ---- flaky + attempts ---- */
+  .flaky-chip { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9a6a00; background: color-mix(in srgb, var(--warning) 22%, transparent); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  :root[data-theme="dark"] .flaky-chip { color: var(--warning); }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .flaky-chip { color: var(--warning); } }
+  .chip.bad { color: var(--critical); border-color: color-mix(in srgb, var(--critical) 35%, transparent); }
+  .node-attempts { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .attempt-label { font-weight: 600; }
+  .attempt { font-variant-numeric: tabular-nums; border-radius: 6px; padding: 1px 7px; border: 1px solid var(--border); background: var(--surface-1); }
+  .attempt.bad { color: var(--critical); }
+  .attempt.ok { color: var(--good); }
+  .attempt-msg { flex-basis: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .strip i { width: 8px; height: 12px; border-radius: 2px; display: inline-block; }
+  .strip i.p { background: var(--good); opacity: 0.7; }
+  .strip i.f { background: var(--critical); }
+  .strip i.r { background: var(--warning); }
+  .strip i.n { background: repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--text-muted) 55%, transparent) 2px 3px); box-shadow: inset 0 0 0 1px var(--text-secondary); }
+  /* ---- attachments ---- */
+  .node-attachments { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .group-attachments { padding: 0 16px 10px 40px; }
+  .att { font-size: 12px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; }
+  .att > summary, .att-link { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; list-style: none; color: var(--text-primary); text-decoration: none; }
+  .att > summary::-webkit-details-marker { display: none; }
+  .att-link:hover, .att > summary:hover { background: var(--surface-2); }
+  .att-icon { width: 16px; text-align: center; color: var(--accent); font-weight: 700; }
+  .att-type { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+  .att pre { margin: 0; padding: 10px 12px; max-height: 360px; overflow: auto; border-top: 1px solid var(--gridline); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .att video { display: block; width: 100%; max-height: 480px; background: #000; border-top: 1px solid var(--gridline); border-radius: 0 0 8px 8px; }
+  .att-list .node { padding-left: 16px; }
+
   #tooltip { position: fixed; pointer-events: none; z-index: 20; max-width: 320px; background: var(--text-primary); color: var(--surface-1); font-size: 12px; line-height: 1.4; padding: 6px 9px; border-radius: 6px; opacity: 0; transition: opacity 0.08s; }
   #tooltip.show { opacity: 1; }
   .tip { cursor: default; }
@@ -711,7 +882,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
       <div class="brand">${LOGO_SVG}<span>neuron-reporter</span></div>
       <div class="eyebrow">${esc([runInfo && (runInfo.Environment || runInfo.environment), title].filter(Boolean).join(' · '))}</div>
       <h1>${counts.COMPLETED} of ${total} test case${total === 1 ? '' : 's'} passed</h1>
-      <p class="hero-sub">${counts.FAILED ? `${counts.FAILED} failed` : 'No failures'}${counts.WARNED ? ` · ${counts.WARNED} warned` : ''} · ${totalSteps} steps in ${fmtDuration(totalDuration)}</p>
+      <p class="hero-sub">${counts.FAILED ? `${counts.FAILED} failed` : 'No failures'}${counts.WARNED ? ` · ${counts.WARNED} warned` : ''}${flakyNow.length ? ` · ${flakyNow.length} flaky` : ''} · ${totalSteps} steps in ${fmtDuration(totalDuration)}</p>
       <div class="hero-meta">
         ${subtitle ? `<span>${subtitle}</span>` : ''}
         ${highlights.filter(Boolean).map((h) => `<span>${esc(h)}</span>`).join('')}
@@ -726,6 +897,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
     <button role="tab" data-tab="overview" onclick="showTab('overview')">Overview</button>
     <button role="tab" data-tab="cases" onclick="showTab('cases')">Test cases <span class="count">${total}</span></button>
     ${checkpointScreenshots.length ? `<button role="tab" data-tab="shots" onclick="showTab('shots')">Screenshots <span class="count">${checkpointScreenshots.length}</span></button>` : ''}
+    ${attachmentCount ? `<button role="tab" data-tab="files" onclick="showTab('files')">Attachments <span class="count">${attachmentCount}</span></button>` : ''}
     ${history ? `<button role="tab" data-tab="trends" onclick="showTab('trends')">Trends <span class="count">${runs.length}</span></button>` : ''}
   </nav>
 
@@ -765,6 +937,8 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
       </div>` : ''}
     </div>
 
+    ${renderFlakyList(tree)}
+
     <div class="card">
       <div class="card-head"><h2>Slowest steps</h2><span class="card-hint">where this run's time went</span></div>
       ${renderSlowest(tree)}
@@ -778,6 +952,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
         <button data-filter="FAILED" onclick="filterCases('FAILED', this)">Failed <span class="count">${counts.FAILED}</span></button>
         <button data-filter="WARNED" onclick="filterCases('WARNED', this)">Warned <span class="count">${counts.WARNED}</span></button>
         <button data-filter="COMPLETED" onclick="filterCases('COMPLETED', this)">Passed <span class="count">${counts.COMPLETED}</span></button>
+        ${flakyCases ? `<button data-filter="FLAKY" onclick="filterCases('FLAKY', this)">Flaky <span class="count">${flakyCases}</span></button>` : ''}
       </div>
       <input type="search" placeholder="Search test cases" oninput="searchCases(this.value)">
       <button class="ghost" onclick="setAll(true)">Expand all</button>
@@ -792,12 +967,17 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   <section class="tab-panel" data-panel="shots">
     <div class="gallery">
       ${checkpointScreenshots.map((s, i) => `
-        <figure onclick="openLightbox('${s.screenshot.dataUri}')" class="${/^Failure/.test(s.screenshot.caption) ? 'is-fail' : ''}">
+        <figure onclick="openLightbox(this.dataset.src)" data-src="${esc(s.screenshot.dataUri)}" class="${/^Failure/.test(s.screenshot.caption) ? 'is-fail' : ''}">
           <img src="${s.screenshot.dataUri}" alt="${esc(s.screenshot.caption)}" loading="lazy">
           <figcaption><span class="shot-n">${i + 1}</span>${esc(s.screenshot.caption.replace(/^Failure — /, ''))}${/^Failure/.test(s.screenshot.caption) ? '<span class="shot-tag">failure</span>' : ''}</figcaption>
         </figure>
       `).join('')}
     </div>
+  </section>` : ''}
+
+  ${attachmentCount ? `
+  <section class="tab-panel" data-panel="files">
+    ${renderAttachmentsTab(tree)}
   </section>` : ''}
 
   ${history ? `
@@ -840,7 +1020,7 @@ function render({ title, subtitle = '', envVars = {}, labels = null, tree, histo
   let caseFilter = 'ALL', caseQuery = '';
   function applyCaseFilters() {
     document.querySelectorAll('#case-list > [data-status]').forEach((el) => {
-      const okStatus = caseFilter === 'ALL' || el.dataset.status === caseFilter;
+      const okStatus = caseFilter === 'ALL' || (caseFilter === 'FLAKY' ? el.dataset.flaky === 'true' : el.dataset.status === caseFilter);
       const okText = !caseQuery || (el.dataset.text || '').includes(caseQuery) || el.textContent.toLowerCase().includes(caseQuery);
       el.classList.toggle('hidden', !(okStatus && okText));
     });

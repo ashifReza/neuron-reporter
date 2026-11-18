@@ -1,7 +1,7 @@
 {
   "name": "neuron-reporter",
-  "version": "1.0.0",
-  "description": "A self-contained HTML test report for UI automation: steps and test cases, screenshots, run history trends and failure triage. Zero dependencies. Works with WebdriverIO, Appium, Playwright, Maestro or any runner.",
+  "version": "1.2.0",
+  "description": "A self-contained HTML test report for UI automation: steps and test cases, screenshots, videos and logs, retries and flaky detection, run history trends and failure triage. Zero dependencies. Works with WebdriverIO, Appium, Playwright, Maestro, any JUnit XML (pytest, TestNG, Maven, Gradle, Go, .NET) or any runner.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ashifReza/neuron-reporter.git"
@@ -11,25 +11,43 @@
     "url": "https://github.com/ashifReza/neuron-reporter/issues"
   },
   "main": "src/index.js",
+  "types": "types/index.d.ts",
   "bin": {
     "neuron-reporter": "bin/neuron-reporter.js"
   },
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./playwright-reporter": {
+      "types": "./types/playwright-reporter.d.ts",
+      "default": "./src/playwright-reporter.js"
+    },
     "./adapters/webdriverio": "./src/adapters/webdriverio.js",
     "./adapters/playwright": "./src/adapters/playwright.js",
     "./adapters/maestro": "./src/adapters/maestro.js",
+    "./adapters/junit": "./src/adapters/junit.js",
+    "./merge": "./src/merge.js",
+    "./schema/run.schema.json": "./schema/run.schema.json",
     "./package.json": "./package.json"
   },
   "files": [
     "src",
     "bin",
+    "types",
+    "schema",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "example": "node examples/generate-sample.js"
+    "test": "node --test",
+    "example": "node examples/generate-sample.js",
+    "prepublishOnly": "npm test"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "test-report",
@@ -38,7 +56,10 @@
     "webdriverio",
     "appium",
     "playwright",
+    "playwright-reporter",
     "maestro",
+    "junit",
+    "flaky-tests",
     "qa",
     "test-automation"
   ],
